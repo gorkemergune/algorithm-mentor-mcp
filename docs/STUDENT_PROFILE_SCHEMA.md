@@ -12,6 +12,7 @@ class StudentProfile:
     user_id: str
     level: str                    # "beginner" | "intermediate" | "advanced"
     topic_scores: dict[str, float]  # 0.0 - 1.0 arası, konu bazlı yeterlilik
+    recent_errors: dict[str, list[str]]  # konu -> son 3 evidence girdisi (bkz. aşağıda)
     current_focus: str            # şu anki odak konu
     preferred_language: str       # "tr" | "en" — problem/hint metinlerinin dili
     history: list[Attempt]        # tüm denemelerin kaydı
@@ -25,6 +26,14 @@ dilden çıkarılır (host, ilk mesajın dilini iletir) ya da açıkça sorulabi
 `get_problem` ve `hint` tool'ları bu alanı varsayılan `locale` olarak
 kullanır — her çağrıda tekrar belirtmeye gerek kalmaz.
 
+`recent_errors`: sadece sayısal skor (`graphs: 0.63`) mentor için yetersiz
+— "neden 0.63" sorusuna cevap veremez. Bu yüzden her konu için
+`review_solution.evidence`'tan gelen son 3 girdi ayrıca tutulur, örn.
+`{"graphs": ["confused BFS with DFS", "visited-state handling eksik"]}`.
+`get_next_topic` ve mentor yorumu bu alanı okuyarak "graph'ta traversal
+mantığını biliyorsun ama visited-state yönetiminde hata yapıyorsun" gibi
+somut geri bildirim verebilir — sadece yüzde göstermek yerine.
+
 `external_evidence` (v2, bkz. `sync_external_progress`): bağlı
 LeetCode/GitHub hesabından çekilen "kaç problem çözülmüş" gibi bilgiyi
 tutar, örn. `{"leetcode_solved_count": 87, "github_repo": "..."}`. Bu alan
@@ -36,18 +45,37 @@ bir problem bu sistemin ölçtüğü kavrayış derinliğinde anlaşılmış olm
 class Attempt:
     problem_id: str
     topic: str
-    outcome: str                  # "solved" | "explained_correct" | "explained_incorrect" | "failed"
-    hints_used: int                # sadece outcome="solved" için anlamlı
+    score: float                  # review_solution'ın sabit tablosundan (bkz. TOOLS.md)
+    evidence: list[str]           # review_solution.evidence
+    hints_used: int
     mistake_type: str | None      # review_solution'dan gelir
     timestamp: datetime
 ```
 
-## Konu listesi (v1)
+**Kritik mimari kural**: `Attempt.score` yalnızca `review_solution`
+çıktısından gelir. `update_profile` tool'u, kendisine geçirilen `score`
+değerinin `review_solution`'ın sabit tablosundaki 5 değerden (1.0 / 0.8 /
+0.6 / 0.5 / 0.2) biri olduğunu doğrular; değilse çağrıyı reddeder. Bu,
+host LLM'in (Claude'un) profil verisini serbest bir sayı göndererek
+doğrudan manipüle etmesini mimari olarak imkânsız kılar — mentor sadece
+*doğru/yanlış* ya da *kaç hint kullanıldı* gibi sınırlı, kural tabanlı
+girdiler sağlar; skoru hesaplayan her zaman sunucu tarafındaki sabit
+tablodur.
 
-`arrays`, `strings`, `hashmap`, `two_pointers`, `binary_search`, `trees`,
-`graphs`, `dp`
+## Konu listesi ve bağımlılık grafiği (v1)
 
-(v1'de sabit liste; v2'de problem setine göre dinamik olabilir.)
+`arrays`, `strings`, `hashmap`, `two_pointers`, `sliding_window`,
+`binary_search`, `trees`, `dfs`, `bfs`, `graphs`, `dp`
+
+Bu liste düz değil — aralarında prerequisite (ön koşul) ilişkisi var,
+`data/topics.json`'da statik bir grafik olarak tutulur (tam örnek
+`docs/TOOLS.md` → `get_next_topic` bölümünde). Örn. `graphs`, `dfs` ve
+`bfs` tamamlanmadan önerilmez; `dfs`/`bfs` de `trees` tamamlanmadan
+önerilmez. Bu olmadan sistem "en düşük skor" mantığıyla kullanıcıyı
+temelini atmadığı bir konuya (örn. arrays bilmeden graphs'a) yönlendirebilir
+— bu yüzden v1'de zorunlu.
+
+(v2'de problem setine göre dinamik/genişleyebilir hale gelebilir.)
 
 ## Skorlama formülü (v1 — basit versiyon)
 
@@ -87,9 +115,15 @@ sonrası) ağırlıkları gözden geçirmek daha sağlıklı.
 
 ## Sonraki konu seçimi (`get_next_topic`)
 
-En düşük skorlu konu, **ama** son 3 denemede o konuda art arda başarısız
-olunmadıysa (art arda 3 başarısızlık varsa bir önceki/daha kolay konuya
-geçici olarak dön — "sıkışma" durumunu önlemek için).
+Seçim üç kuralın birleşimi:
+
+1. **Prerequisite tamam**: sadece ön koşulları belli bir eşiğin (örn. 0.6)
+   üstünde skorlanmış konular aday olur.
+2. **En düşük skor**: adaylar arasından en düşük skorlu olan seçilir.
+3. **Sıkışma koruması**: son 3 denemede aynı konuda art arda başarısızlık
+   varsa (`score <= 0.2` üç kez üst üste), geçici olarak bir önceki/daha
+   kolay ön koşul konusuna dönülür — kullanıcı aynı duvara tekrar tekrar
+   çarpmasın diye.
 
 ## Örnek çıktı (görüntüleme amaçlı)
 

@@ -1,0 +1,72 @@
+[
+    {
+      "id": "arrays_012",
+      "topic": "arrays",
+      "difficulty": "easy",
+      "title": {"tr": "İki Sayının Toplamı", "en": "Two Sum"},
+      "prompt": {
+        "tr": "Bir tam sayı dizisi ve bir hedef sayı verildiğinde, toplamları hedefe eşit olan iki elemanın indekslerini döndür. Her girdinin tam olarak bir çözümü olduğunu varsayabilirsin, aynı elemanı iki kez kullanamazsın.",
+        "en": "Given an array of integers and a target, return the indices of the two numbers that add up to the target. Assume exactly one solution exists, and you may not use the same element twice."
+      },
+      "starter_code": "def solve(nums, target):\n    pass",
+      "test_cases": [
+        {"input": "[2,7,11,15], 9", "expected": "[0,1]", "hidden": false},
+        {"input": "[3,2,4], 6", "expected": "[1,2]", "hidden": false},
+        {"input": "[3,3], 6", "expected": "[0,1]", "hidden": true}
+      ],
+      "reference_approach": {
+        "tags": ["hashmap", "single_pass"],
+        "summary": {
+          "tr": "Tek geçişte hashmap'te tamamlayıcıyı ara.",
+          "en": "Single pass, look up the complement in a hashmap."
+        }
+      },
+      "hints": {
+        "tr": [
+          "Her eleman için, listede daha önce gördüğün elemanlara bakman gerekiyor mu?",
+          "O(1) arama sağlayan bir veri yapısı düşün — hashmap.",
+          "Her elemanda target - nums[i] değerinin hashmap'te olup olmadığına bak; yoksa nums[i]'yi hashmap'e ekle."
+        ],
+        "en": [
+          "For each element, do you need to look back at elements you've already seen?",
+          "Think of a data structure that gives O(1) lookup — a hashmap.",
+          "For each element, check if target - nums[i] is already in the hashmap; if not, add nums[i] to it."
+        ]
+      }
+    },
+    {
+      "id": "hashmap_004",
+      "topic": "hashmap",
+      "difficulty": "easy",
+      "title": {"tr": "Geçerli Anagram", "en": "Valid Anagram"},
+      "prompt": {
+        "tr": "İki string verildiğinde, ikincisinin birincisinin bir anagramı olup olmadığını döndür.",
+        "en": "Given two strings, return whether the second is an anagram of the first."
+      },
+      "starter_code": "def solve(s, t):\n    pass",
+      "test_cases": [
+        {"input": "\"anagram\", \"nagaram\"", "expected": "true", "hidden": false},
+        {"input": "\"rat\", \"car\"", "expected": "false", "hidden": false},
+        {"input": "\"a\", \"ab\"", "expected": "false", "hidden": true}
+      ],
+      "reference_approach": {
+        "tags": ["hashmap", "frequency_count"],
+        "summary": {
+          "tr": "Her iki string için karakter frekans sayımı yap, karşılaştır.",
+          "en": "Count character frequencies for both strings and compare."
+        }
+      },
+      "hints": {
+        "tr": [
+          "Uzunluklar farklıysa direkt anagram olamaz, önce onu kontrol et.",
+          "Her karakterin kaç kere geçtiğini saymanı sağlayan bir veri yapısı düşün.",
+          "Bir string için sayaç oluştur, diğerini işlerken sayaçtan düş; sonunda hepsi 0 olmalı."
+        ],
+        "en": [
+          "If the lengths differ, it can't be an anagram — check that first.",
+          "Think of a data structure that lets you count how many times each character appears.",
+          "Build a counter from one string, then decrement while processing the other; everything should end at 0."
+        ]
+      }
+    }
+  ]

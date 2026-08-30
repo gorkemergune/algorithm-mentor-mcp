@@ -52,12 +52,15 @@ array'ler. Oradan başlayalım.
 [tool_call] submit_solution(code="...", problem_id="arrays_012", language="python")
 → {"passed": true, "test_results": [...], "runtime_ms": 8, "error": null}
 
-[tool_call] review_solution(code="...", problem_id="arrays_012", test_results={...})
-→ {"feedback_raw": "passed_no_hints", "mistake_type": "none",
+[tool_call] review_solution(problem_id="arrays_012", attempt_type="code",
+                             test_results={...}, hints_used=0)
+→ {"score": 1.0, "evidence": ["Correct algorithm", "Clean edge case handling"],
+    "mistake_type": "none", "feedback": "Temiz çözüm, hiç hint kullanmadın.",
     "suggested_topic_reinforcement": null}
 
 [tool_call] update_profile(topic="arrays", problem_id="arrays_012",
-                            passed=true, hints_used=0, mistake_type=null)
+                            score=1.0, evidence=["Correct algorithm", "Clean edge case handling"],
+                            mistake_type=null)
 → {"topic_scores": {"arrays": 0.72, ...}, "level": "beginner"}
 ```
 
@@ -116,17 +119,20 @@ starting point.
 ```
 [tool_call] submit_solution(...) → {"passed": true, ...}
 
-[tool_call] review_solution(...)
-→ {"feedback_raw": "passed_with_hints", "mistake_type": "wrong_approach",
+[tool_call] review_solution(problem_id="graphs_003", attempt_type="code",
+                             test_results={...}, hints_used=1)
+→ {"score": 0.8, "evidence": ["Correct traversal", "Needed one hint on visited-state"],
+    "mistake_type": "wrong_approach", "feedback": "Good, but you needed a nudge on tracking visited nodes.",
     "suggested_topic_reinforcement": "graphs"}
 
 [tool_call] update_profile(topic="graphs", problem_id="graphs_003",
-                            passed=true, hints_used=1, mistake_type="wrong_approach")
+                            score=0.8, evidence=["Correct traversal", "Needed one hint on visited-state"],
+                            mistake_type="wrong_approach")
 → {"topic_scores": {"graphs": 0.31, ...}}
 
 [tool_call] get_next_topic()
 → {"recommended_topic": "graphs", "reason": "still the lowest score (31%),
-    reinforcing before moving on"}
+    prerequisites (trees, dfs, bfs) already cleared, reinforcing before moving on"}
 ```
 
 Nice, you got it — used one hint, so graphs moved up to 31%. Since it's
@@ -153,11 +159,19 @@ Elbette, mantığını anlat yeter — bu da değerlendirmeye sayılır.
     "approach_summary": "Tek geçişte hashmap'te tamamlayıcıyı ara."}
 ```
 
-Claude, kullanıcının anlatımını referans yaklaşımla karşılaştırır — eşleşiyor:
+Claude, kullanıcının anlatımını referans yaklaşımla karşılaştırır — eşleşiyor,
+bu yüzden sadece bir boolean karar veriyor (sayısal puanı kendisi seçmiyor):
 
 ```
+[tool_call] review_solution(problem_id="arrays_012", attempt_type="explanation",
+                             reference_match=true)
+→ {"score": 0.5, "evidence": ["Correct approach described verbally, no code written"],
+    "mistake_type": "none", "feedback": "Yaklaşımın tam doğru.",
+    "suggested_topic_reinforcement": null}
+
 [tool_call] update_profile(topic="arrays", problem_id="arrays_012",
-                            outcome="explained_correct", hints_used=0, mistake_type=null)
+                            score=0.5, evidence=["Correct approach described verbally, no code written"],
+                            mistake_type=null)
 → {"topic_scores": {"arrays": 0.58, ...}}
 ```
 
@@ -169,11 +183,15 @@ yazalım, istersen başka bir soruya geçelim.
 
 ## Notlar
 
-- Her iki senaryoda da **server hiçbir zaman doğal dil cümlesi üretmiyor**
+- Her senaryoda da **server hiçbir zaman doğal dil cümlesi üretmiyor**
   (hint_text ve prompt hariç — onlar önceden yazılmış, iki dilde hazır
   şablon metinler). Yorum cümlelerini ("Tebrikler...", "Nice, you got
   it...") host (Claude) üretiyor, bu yüzden otomatik doğru dilde çıkıyor.
 - `mistake_type` gibi alanlar kod/etiket olarak kalıyor (`"wrong_approach"`),
   metne çevrilmiyor — çeviri işini host yapıyor.
+- **`score` alanı her zaman `review_solution`'dan gelir**, host tarafından
+  serbestçe belirlenmez — `update_profile` bu değeri sabit tablodaki 5
+  değerden biri olarak doğrular. Host'un tek serbest kararı, açıklama
+  senaryosunda `reference_match` boolean'ıdır.
 - Gerçek implementasyonda tool çağrıları kullanıcıya gösterilmez (arka
   planda çalışır); burada eğitim/tanıtım amaçlı açık gösterildi.

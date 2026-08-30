@@ -120,70 +120,127 @@ metin üretimi yok, sabit şablon seçimi var.
 
 **Açıklama**: Doğru/yanlıştan bağımsız olarak kod kalitesi üzerine mentor
 geri bildirimi verir — okunabilirlik, edge case eksikliği, alternatif
-yaklaşım önerisi.
+yaklaşım önerisi. **Ayrıca bu denemenin sayısal skorunu da bu tool
+hesaplar** — `update_profile` bu skoru olduğu gibi kabul eder, host
+tarafından uydurulmuş bir sayı asla kabul etmez (bkz. aşağıdaki mimari
+karar).
 
 **Parametreler**:
 
-- `code: str`
 - `problem_id: str`
-- `test_results: object` (submit_solution çıktısı)
+- `attempt_type: str` ("code" | "explanation")
+- `test_results: object | null` (attempt_type="code" ise, submit_solution çıktısı)
+- `hints_used: int` (attempt_type="code" ise)
+- `reference_match: bool | null` (attempt_type="explanation" ise — host'un
+  kullanıcının anlatımını `get_reference_approach` ile karşılaştırıp verdiği
+  doğru/yanlış kararı; host burada sadece **boolean** verir, sayısal skor
+  vermez)
 
 **Dönen değer**:
 
 ```json
 {
-  "feedback": "Çözüm doğru ama boş liste durumunu kontrol etmiyorsun.",
+  "score": 0.8,
+  "evidence": ["Correct algorithm", "Minor implementation bug: off-by-one in loop bound"],
   "mistake_type": "missing_edge_case | wrong_approach | inefficient | none",
+  "feedback": "Çözüm doğru ama boş liste durumunu kontrol etmiyorsun.",
   "suggested_topic_reinforcement": "arrays"
 }
 ```
 
-**Notlar (mimari karar)**: v1'de bu tool ham veriyi (kod + test sonucu)
-hazırlar, asıl doğal-dil yorumunu çağıran LLM (Claude) yapar — server
-kendi içinde ayrı bir LLM çağrısı yapmaz. `mistake_type` sınıflandırması
-basit kural tabanlı kontrollerle başlar (örn. boş input test case'i geçmedi
-→ `missing_edge_case`), gelişmiş sınıflandırma v2.
+**Notlar (mimari karar — kritik)**: `score` alanı **sabit bir tablodan**
+hesaplanır, host tarafından serbestçe seçilemez:
 
-**Dil notu**: `mistake_type` etiketi dilden bağımsız sabit bir kod (örn.
-`"missing_edge_case"`), metne çevrilmez — çünkü asıl doğal dil geri
-bildirimini host LLM üretir ve kullanıcının o an konuştuğu dilde otomatik
-cevap verir. Bu yüzden bu tool'a `locale` parametresi eklemeye gerek yok.
+| Durum                                                                                          | score |
+| ---------------------------------------------------------------------------------------------- | ----- |
+| `attempt_type="code"`, test geçti, hints_used=0                                             | 1.0   |
+| `attempt_type="code"`, test geçti, hints_used=1                                             | 0.8   |
+| `attempt_type="code"`, test geçti, hints_used>=2                                            | 0.6   |
+| `attempt_type="explanation"`, reference_match=true                                           | 0.5   |
+| `attempt_type="code"`, test geçmedi / `attempt_type="explanation"`, reference_match=false | 0.2   |
+
+Bu tablo `STUDENT_PROFILE_SCHEMA.md`'deki skorlama formülüyle birebir
+aynıdır — iki yerde ayrı ayrı tutulmaz, `review_solution` implementasyonu
+şema dosyasındaki tabloyu import eder. Host'un tek yaptığı, kod kalitesi
+yorumunu (doğal dil, `feedback` alanı) üretmek ve `explanation` durumunda
+`reference_match` boolean'ını vermek — asla ham bir mastery sayısı
+göndermez. Bu, LLM'in profil verisini yanlışlıkla ya da hatalı yorumla
+bozmasını mimari olarak imkânsız kılar.
+
+`mistake_type` sınıflandırması basit kural tabanlı kontrollerle başlar
+(örn. boş input test case'i geçmedi → `missing_edge_case`), gelişmiş
+sınıflandırma v2.
+
+**Dil notu**: `mistake_type` ve `evidence` içindeki kod-etiketler dilden
+bağımsızdır; `feedback` alanı ise host tarafından kullanıcının konuştuğu
+dilde serbestçe üretilir. Bu yüzden bu tool'a `locale` parametresi
+eklemeye gerek yok.
 
 ---
 
 ## update_profile `v1`
 
 **Açıklama**: Bir deneme tamamlandıktan sonra `StudentProfile`'ı günceller.
+**Yalnızca `review_solution` çıktısını girdi olarak alır** — host'un
+kendi hesapladığı bir skor ya da mastery değeri kabul etmez.
 
 **Parametreler**:
 
 - `topic: str`
 - `problem_id: str`
-- `outcome: str` ("solved" | "explained_correct" | "explained_incorrect" | "failed")
-- `hints_used: int` (sadece `outcome="solved"` için anlamlı)
+- `score: float` (yalnızca bir önceki `review_solution` çağrısının `score`
+  alanından — implementasyon, bu değerin review_solution'ın sabit
+  tablosundaki 5 değerden biri olduğunu doğrular, doğrulama başarısızsa
+  çağrıyı reddeder)
+- `evidence: list[str]` (`review_solution.evidence`)
 - `mistake_type: str | null`
 
-**Dönen değer**: Güncellenmiş `StudentProfile` (bkz. `STUDENT_PROFILE_SCHEMA.md`).
+**Dönen değer**: Güncellenmiş `StudentProfile` özeti (bkz.
+`STUDENT_PROFILE_SCHEMA.md`) — `topic_scores`, `recent_errors`.
 
-**Notlar**: Skorlama formülü şema dosyasında tanımlı — bu tool sadece
-formülü uygular, formülü kendi içinde icat etmez. `outcome="explained_correct"`,
-kullanıcının kod yazmadan doğru yaklaşımı anlattığı durumları (bkz.
-`explain_approach`) karşılar ve tam puandan düşük ama başarısızlıktan
-yüksek bir puan (0.5) verir — mentorluk amacı kod yazma becerisini değil
-kavrayışı da ölçmek.
+**Notlar**: EMA formülü şema dosyasında tanımlı — bu tool sadece formülü
+uygular (`yeni_skor = eski_skor*(1-alpha) + score*alpha`), formülü ya da
+`score`'un kendisini icat etmez. `evidence` listesinden en fazla son 3
+girdi `StudentProfile.recent_errors[topic]`'e yazılır (eskiler düşer).
 
 ---
 
 ## get_next_topic `v1`
 
 **Açıklama**: Güncel profile göre bir sonraki çalışılacak konuyu önerir.
+Sadece "en düşük skor" değil, **prerequisite grafiği** de dikkate alınır
+— aksi halde kullanıcı `arrays` bilmeden `graphs`'a yönlendirilebilir
+çünkü `graphs` skoru daha düşük görünebilir.
 
 **Parametreler**: yok (profile'dan okur).
 
 **Dönen değer**:
 
 ```json
-{"recommended_topic": "graphs", "reason": "En düşük skor (%24), önceki konu tamamlandı"}
+{"recommended_topic": "graphs", "reason": "En düşük skor (%24), prerequisite'ler (arrays, trees) tamamlandı"}
+```
+
+**Notlar**: Konu bağımlılıkları `data/topics.json`'da statik bir grafik
+olarak tutulur (bkz. örnek aşağıda). Seçim mantığı: prerequisite'leri
+tamamlanmış (skor eşik üstü) konular arasından en düşük skorlusu seçilir;
+son 3 denemede art arda başarısızlık varsa geçici olarak bir önceki/daha
+kolay konuya dönülür.
+
+`data/topics.json` örneği:
+
+```json
+{
+  "arrays": {"prerequisites": []},
+  "hashmap": {"prerequisites": ["arrays"]},
+  "two_pointers": {"prerequisites": ["arrays"]},
+  "sliding_window": {"prerequisites": ["two_pointers"]},
+  "trees": {"prerequisites": []},
+  "binary_search": {"prerequisites": ["arrays"]},
+  "dfs": {"prerequisites": ["trees"]},
+  "bfs": {"prerequisites": ["trees"]},
+  "graphs": {"prerequisites": ["dfs", "bfs"]},
+  "dp": {"prerequisites": ["arrays", "trees"]}
+}
 ```
 
 ---
@@ -205,9 +262,12 @@ host (Claude) `get_reference_approach` ile karşılaştırıp karar verir.
 {"logged": true, "problem_id": "graphs_003"}
 ```
 
-**Notlar**: Bu tool sadece anlatımı kaydeder, değerlendirme yapmaz. Asıl
-karar `update_profile`'a `outcome="explained_correct"` ya da
-`"explained_incorrect"` geçilirken host tarafından verilir.
+**Notlar**: Bu tool sadece anlatımı kaydeder, değerlendirme yapmaz. Akış:
+`explain_approach` → `get_reference_approach` → host karşılaştırıp
+`reference_match` boolean'ını belirler → `review_solution(attempt_type="explanation", reference_match=...)`
+skoru (0.5 ya da 0.2) hesaplar → `update_profile` bu skoru işler. Host
+hiçbir noktada doğrudan bir mastery sayısı belirlemez, sadece
+doğru/yanlış kararını verir.
 
 ---
 
@@ -255,6 +315,10 @@ problem, bu sistemin ölçtüğü derinlikte anlaşılmış olmayabilir; iki kay
 karıştırılırsa skor anlamını yitirir.
 
 **Durum**: Tasarım aşamasında.
+
+---
+
+## translate_solution `v2`
 
 **Açıklama**: Bir dilde çözülmüş kodu başka dile çevirmeyi teşvik eder,
 iki çözümü karşılaştırır.

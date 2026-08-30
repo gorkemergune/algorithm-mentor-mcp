@@ -1,0 +1,13 @@
+{
+    "arrays": {"prerequisites": []},
+    "strings": {"prerequisites": []},
+    "hashmap": {"prerequisites": ["arrays"]},
+    "two_pointers": {"prerequisites": ["arrays"]},
+    "sliding_window": {"prerequisites": ["two_pointers"]},
+    "binary_search": {"prerequisites": ["arrays"]},
+    "trees": {"prerequisites": []},
+    "dfs": {"prerequisites": ["trees"]},
+    "bfs": {"prerequisites": ["trees"]},
+    "graphs": {"prerequisites": ["dfs", "bfs"]},
+    "dp": {"prerequisites": ["arrays", "trees"]}
+  }
