@@ -94,12 +94,22 @@ sınıflandırması (bkz. "Kapsam" bölümü).
 > buradan devam noktasını anlar.
 
 - Mimari ve tüm tool spesifikasyonları netleşti (`docs/TOOLS.md`,
-  `docs/STUDENT_PROFILE_SCHEMA.md`, `docs/EXAMPLE_CHAT.md`) — proje artık
-  koda başlamaya hazır.
-- Henüz yapılmadı: `data/problems.json` (ilk problem seti), `data/topics.json`
-  (bağımlılık grafiği), proje iskeleti (`src/` klasörleri, `pyproject.toml`).
-- **Sıradaki adım**: önce `data/problems.json`'a 5-10 problem (arrays'ten
-  başla) + `data/topics.json`'a bağımlılık grafiğini ekle. Ardından
-  `src/domain/mastery.py`'yi (skorlama formülü, tek yerde) implemente et,
-  sonra `get_problem` → `submit_solution` → `review_solution` →
-  `update_profile` sırasıyla tool'lara geç.
+  `docs/STUDENT_PROFILE_SCHEMA.md`, `docs/EXAMPLE_CHAT.md`).
+- `data/problems.json` (2 problem: `arrays_012`, `hashmap_004`) ve
+  `data/topics.json` (bağımlılık grafiği) hazır.
+- Proje iskeleti kuruldu (`pyproject.toml`, `src/domain`, `src/tools`,
+  `tests/`). Bitenler:
+  - `src/domain/mastery.py` — sabit skor tablosu (`attempt_score`), EMA
+    (`update_topic_score`, skoru tabloya karşı doğrular), seviye eşikleri
+    (`level_for_scores`).
+  - `src/domain/problem.py` — `Problem`/`ProblemTestCase` modelleri,
+    `data/problems.json` yükleyicisi, locale çözümleme.
+  - `src/tools/get_problem.py` — gizli test case / hint / referans yaklaşım
+    çıktıya sızmaz; locale boşsa `preferred_language`'e düşer.
+  - Testler: `tests/test_mastery.py`, `tests/test_get_problem.py` (28 test).
+- **Sıradaki adım**: `src/execution/` (ExecutionEngine + PythonRunner) ve
+  ardından `submit_solution` → `review_solution` (skoru `mastery.attempt_score`
+  ile alır) → `update_profile` (SQLite storage katmanı burada gerekecek).
+- Not: `get_problem` eşleşen problemler arasından ilkini seçer — "daha önce
+  çözülmüşü atla" mantığı `src/storage` geldiğinde eklenecek. Problem seti
+  hâlâ ince (arrays/hashmap easy), diğer konular için problem eklenmeli.
