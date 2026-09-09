@@ -59,7 +59,7 @@ class TestScoreValidation:
 
         assert db.get_topic_scores(seeded)["arrays"] == 0.0
         assert db.get_attempts(seeded) == []
-        assert db.get_recent_errors(seeded) == {}
+        assert db.get_recent_evidence(seeded) == {}
 
     def test_negative_hints_are_rejected(self, seeded):
         with pytest.raises(ValueError, match="hints_used"):
@@ -103,29 +103,29 @@ class TestEma:
 class TestRecentErrors:
     def test_evidence_is_recorded_for_the_topic(self, seeded):
         result = update(seeded, score=0.2, evidence=["Approach incorrect"])
-        assert result["recent_errors"]["arrays"] == ["Approach incorrect"]
+        assert result["recent_evidence"]["arrays"] == ["Approach incorrect"]
 
     def test_only_the_last_three_entries_survive(self, seeded):
         for index in range(5):
             update(seeded, score=0.2, evidence=[f"hata {index}"])
 
-        stored = db.get_recent_errors(seeded)["arrays"]
+        stored = db.get_recent_evidence(seeded)["arrays"]
         assert stored == ["hata 4", "hata 3", "hata 2"]
 
     def test_a_multi_entry_evidence_list_is_also_trimmed(self, seeded):
         update(seeded, score=0.2, evidence=["bir", "iki", "üç", "dört"])
-        assert len(db.get_recent_errors(seeded)["arrays"]) == 3
+        assert len(db.get_recent_evidence(seeded)["arrays"]) == 3
 
     def test_empty_evidence_writes_nothing(self, seeded):
         result = update(seeded, score=1.0, evidence=[])
-        assert result["recent_errors"] == {}
+        assert result["recent_evidence"] == {}
 
     def test_topics_keep_separate_error_lists(self, seeded):
         update(seeded, score=0.2, evidence=["arrays hatası"])
         update(seeded, topic="hashmap", problem_id="hashmap_004", score=0.2,
                evidence=["hashmap hatası"])
 
-        errors = db.get_recent_errors(seeded)
+        errors = db.get_recent_evidence(seeded)
         assert errors["arrays"] == ["arrays hatası"]
         assert errors["hashmap"] == ["hashmap hatası"]
 
@@ -141,12 +141,12 @@ class TestAttemptHistory:
         assert attempts[0]["hints_used"] == 2
         assert attempts[1]["score"] == 1.0
 
-    def test_history_survives_pruned_recent_errors(self, seeded):
+    def test_history_survives_pruned_recent_evidence(self, seeded):
         for index in range(5):
             update(seeded, score=0.2, evidence=[f"hata {index}"])
 
         assert len(db.get_attempts(seeded)) == 5
-        assert len(db.get_recent_errors(seeded)["arrays"]) == 3
+        assert len(db.get_recent_evidence(seeded)["arrays"]) == 3
 
 
 class TestPreconditions:
@@ -169,7 +169,7 @@ class TestPreconditions:
 class TestReturnedSummary:
     def test_summary_shape(self, seeded):
         result = update(seeded, score=0.8)
-        assert set(result) == {"topic_scores", "recent_errors", "level"}
+        assert set(result) == {"topic_scores", "recent_evidence", "level"}
 
     def test_current_focus_follows_the_updated_topic(self, seeded):
         update(seeded, topic="hashmap", problem_id="hashmap_004", score=0.8)

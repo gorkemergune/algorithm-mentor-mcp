@@ -17,7 +17,7 @@ class TestSchema:
         rows = conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'").fetchall()
         names = {row["name"] for row in rows}
 
-        assert {"profile", "topic_scores", "recent_errors", "attempts"} <= names
+        assert {"profile", "topic_scores", "recent_evidence", "attempts"} <= names
 
     def test_init_is_idempotent(self, conn):
         db.init_db(conn)
@@ -102,31 +102,31 @@ class TestTopicScores:
 class TestRecentErrors:
     def test_entries_are_pruned_to_three_per_topic(self, conn):
         for index in range(6):
-            db.add_recent_errors(conn, "arrays", [f"hata {index}"])
+            db.add_recent_evidence(conn, "arrays", [f"hata {index}"])
 
-        stored = db.get_recent_errors(conn)["arrays"]
+        stored = db.get_recent_evidence(conn)["arrays"]
         assert stored == ["hata 5", "hata 4", "hata 3"]
 
     def test_a_single_call_with_many_entries_is_also_pruned(self, conn):
-        db.add_recent_errors(conn, "arrays", ["bir", "iki", "üç", "dört"])
+        db.add_recent_evidence(conn, "arrays", ["bir", "iki", "üç", "dört"])
 
-        rows = conn.execute("SELECT COUNT(*) AS total FROM recent_errors").fetchone()
+        rows = conn.execute("SELECT COUNT(*) AS total FROM recent_evidence").fetchone()
         assert rows["total"] == 3
 
     def test_topics_are_pruned_independently(self, conn):
         for index in range(4):
-            db.add_recent_errors(conn, "arrays", [f"a{index}"])
-        db.add_recent_errors(conn, "graphs", ["g0"])
+            db.add_recent_evidence(conn, "arrays", [f"a{index}"])
+        db.add_recent_evidence(conn, "graphs", ["g0"])
 
-        errors = db.get_recent_errors(conn)
+        errors = db.get_recent_evidence(conn)
         assert len(errors["arrays"]) == 3
         assert errors["graphs"] == ["g0"]
 
     def test_clear_removes_everything(self, conn):
-        db.add_recent_errors(conn, "arrays", ["hata"])
-        db.clear_recent_errors(conn)
+        db.add_recent_evidence(conn, "arrays", ["hata"])
+        db.clear_recent_evidence(conn)
 
-        assert db.get_recent_errors(conn) == {}
+        assert db.get_recent_evidence(conn) == {}
 
 
 class TestAttempts:

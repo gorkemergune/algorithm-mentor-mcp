@@ -27,7 +27,7 @@ def update_profile(
 ) -> dict:
     """Denemeyi profile işler ve güncel özeti döner.
 
-    Dönen değer: `topic_scores`, `recent_errors`, `level`.
+    Dönen değer: `topic_scores`, `recent_evidence`, `level`.
     """
     if hints_used < 0:
         raise ValueError(f"hints_used cannot be negative, got {hints_used!r}")
@@ -58,7 +58,7 @@ def update_profile(
         mistake_type=mistake_type,
     )
     if evidence:
-        db.add_recent_errors(conn, topic, list(evidence))
+        db.add_recent_evidence(conn, topic, list(evidence))
 
     scores = db.get_topic_scores(conn)
     level = mastery.level_for_scores(scores)
@@ -66,6 +66,6 @@ def update_profile(
 
     return {
         "topic_scores": scores,
-        "recent_errors": db.get_recent_errors(conn),
+        "recent_evidence": db.get_recent_evidence(conn),
         "level": level,
     }

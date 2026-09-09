@@ -75,7 +75,7 @@ class TestRepeatedCalls:
         result = assess_level("tr", connection=conn, topics=topics)
 
         assert result["topic_estimates"]["arrays"] == pytest.approx(0.3)
-        assert db.get_recent_errors(conn)["arrays"] == ["kanıt"]
+        assert db.get_recent_evidence(conn)["arrays"] == ["kanıt"]
 
     def test_retake_reseeds_scores_and_clears_errors(self, conn, topics):
         assess_level("tr", connection=conn, topics=topics)
@@ -85,7 +85,7 @@ class TestRepeatedCalls:
 
         assert result["topic_estimates"]["arrays"] == 0.0
         assert result["estimated_level"] == "beginner"
-        assert db.get_recent_errors(conn) == {}
+        assert db.get_recent_evidence(conn) == {}
 
     def test_retake_keeps_the_attempt_history(self, conn, topics):
         assess_level("tr", connection=conn, topics=topics)

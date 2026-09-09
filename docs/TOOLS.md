@@ -10,46 +10,43 @@ Durum etiketleri: `v1` (şimdi yapılacak), `v2` (ertelendi, sadece tanım var).
 
 ## assess_level `v1`
 
-**Açıklama**: Kullanıcıya birkaç kısa/karma zorluk seviyesinde soru çözdürüp
-başlangıç seviyesini ve zayıf/güçlü olduğu konu başlıklarını tahmin eder.
+**Açıklama**: Kullanıcı için profili başlatır. **v1'de gerçek bir tanı
+quiz'i yoktur** — tüm konular `0.0` ile sıfır seed'lenir, `StudentProfile`
+tutarlı bir başlangıç durumundan ilerler. Gerçek çoklu-soru tanı quiz'i
+(problem seçimi + toplu skorlama gerektirir) v2'ye ertelendi.
 
 **Parametreler**:
 
-- `preferred_language: str` ("tr" | "en" — host, kullanıcının ilk mesajının
-  dilini geçer; profile yazılır ve `get_problem`/`hint` için varsayılan
-  `locale` olur). Desteklenmeyen bir değer `ValueError` ile reddedilir.
-- `retake: bool` (mevcut kullanıcı yeniden değerlendirme isterse)
+- `preferred_language: str` ("tr" | "en" — host, konuşmanın dilini geçirir)
+- `retake: bool` (varsayılan `false`; `true` ise mevcut kullanıcı yeniden
+  başlatma ister — bkz. aşağıdaki "Retake davranışı")
 
 **Dönen değer**:
 
 ```json
 {
-  "estimated_level": "beginner | intermediate | advanced",
-  "topic_estimates": {"arrays": 0.7, "graphs": 0.2, "dp": 0.1},
+  "estimated_level": "beginner",
+  "topic_estimates": {"arrays": 0.0, "strings": 0.0, "hashmap": 0.0, "...": 0.0},
   "recommended_start_topic": "arrays"
 }
 ```
 
-**Örnek çağrı**: `assess_level(preferred_language="tr")` → yukarıdaki gibi
-bir profil taslağı üretir, bu taslak `StudentProfile`'a yazılır.
+**Notlar**: `topic_estimates`, `data/topics.json`'daki her konu için
+`0.0` değeriyle doldurulur ve bu, `StudentProfile.topic_scores`'un ilk
+hali olarak SQLite'a yazılır (bkz. `STUDENT_PROFILE_SCHEMA.md` →
+"`topic_scores` ilk değeri"). `recommended_start_topic`, `data/topics.json`
+içinde `prerequisites: []` olan konular arasından dosyadaki sıraya göre
+ilki seçilir (v1'de bu her zaman `arrays`) — tüm skorlar eşit (0.0)
+olduğu için "en düşük skor" kuralı tek başına deterministik değildir.
 
-**Seed kuralı (v1)**: Tool kullanıcıya soru çözdürmez — host'tan sayısal
-tahmin de kabul etmez (mimari kural: host asla ham skor göndermez). İlk
-çağrıda `data/topics.json`'daki **her konu** `0.0` ile seed'lenir,
-`estimated_level` `"beginner"` olur ve dönen `topic_estimates` bu seed'in
-kendisidir. Gerçek ölçüm normal döngüde (`review_solution` →
-`update_profile`) birikir. Kullanıcıya soru sorarak ölçen gerçek
-değerlendirme akışı v2'ye ertelendi.
+**Retake davranışı**: `retake=true` ile çağrıldığında `topic_scores`
+tekrar `0.0`'a sıfırlanır ve `recent_evidence` temizlenir, **ama
+`attempts` tablosu (geçmiş) silinmez** — v2'deki evaluation protocol
+(recovery-after-failure ölçümü gibi) ve genel geçmiş sorgulaması için
+tam kayıt korunur.
 
-**`recommended_start_topic`**: prerequisite'i olmayan konular arasından en
-düşük skorlusu; eşitlikte `data/topics.json`'daki ilk sıra kazanır. Sıfır
-seed'li yeni profilde bu `arrays` olur.
-
-**Tekrar çağrılırsa**: Profil zaten varsa ve `retake=False` ise hiçbir şey
-sıfırlanmaz — mevcut `level`/`topic_scores` olduğu gibi döner (idempotent).
-`retake=True` ise `topic_scores` yeniden seed'lenir ve `recent_errors`
-temizlenir; `attempts` tablosuna **dokunulmaz** (şemadaki "history asla
-budanmaz" kuralı).
+**Örnek çağrı**: `assess_level(preferred_language="tr")` → yukarıdaki
+gibi bir profil taslağı üretir, `StudentProfile`'a yazılır.
 
 ---
 
@@ -258,32 +255,29 @@ kendi hesapladığı bir skor ya da mastery değeri kabul etmez.
   çağrıyı reddeder)
 - `evidence: list[str]` (`review_solution.evidence`)
 - `mistake_type: str | null`
-- `hints_used: int` (varsayılan `0`) — `attempts` tablosu bu alanı zorunlu
-  tutuyor (bkz. `STUDENT_PROFILE_SCHEMA.md` → Depolama). Skoru etkilemez,
-  skor zaten `review_solution`'da hesaplanmıştır; burada yalnızca geçmişe
-  kaydedilir.
 
 **Dönen değer**: Güncellenmiş `StudentProfile` özeti (bkz.
-`STUDENT_PROFILE_SCHEMA.md`) — `topic_scores`, `recent_errors`, `level`:
+`STUDENT_PROFILE_SCHEMA.md`):
 
 ```json
 {
-  "topic_scores": {"arrays": 0.72, "graphs": 0.24},
-  "recent_errors": {"arrays": ["Approach incorrect"]},
+  "topic_scores": {"arrays": 0.72, "...": 0.0},
+  "recent_evidence": {"arrays": ["..."]},
   "level": "beginner"
 }
 ```
 
-`level`, her güncellemede `topic_scores` ortalamasından yeniden hesaplanır
-(şemadaki eşikler) ve `profile` tablosuna yazılır. `current_focus` da
-güncellenen konuya çekilir. `recent_errors` konu başına en yeni 3 girdiyi
-**yeniden eskiye** sıralı döner.
-
 **Notlar**: EMA formülü şema dosyasında tanımlı — bu tool sadece formülü
 uygular (`yeni_skor = eski_skor*(1-alpha) + score*alpha`), formülü ya da
 `score`'un kendisini icat etmez. `evidence` listesinden en fazla son 3
-girdi `StudentProfile.recent_errors[topic]`'e yazılır (eskiler düşer).
+girdi `StudentProfile.recent_evidence[topic]`'e yazılır (eskiler düşer).
 `score` doğrulaması tam eşitlik yerine `math.isclose(score, allowed, abs_tol=1e-9)` ile yapılır (bkz. `STUDENT_PROFILE_SCHEMA.md`).
+
+**`current_focus` güncellemesi**: Bu tool, işlediği `topic` parametresini
+`StudentProfile.current_focus`'a da yazar — `get_next_topic` sadece okur,
+odağı hiçbir zaman kendisi değiştirmez (bkz. `get_next_topic` notları).
+Böylece "şu an hangi konudayız" bilgisi tek bir yazma noktasından
+(`update_profile`) geçer, iki tool aynı alana yarışarak yazmaz.
 
 **Ön koşul**: `topic_scores`'ta ilgili konu satırı yoksa (yani
 `assess_level` hiç çağrılmamışsa) tool hata fırlatır — profil olmadan
@@ -303,14 +297,39 @@ Sadece "en düşük skor" değil, **prerequisite grafiği** de dikkate alınır
 **Dönen değer**:
 
 ```json
-{"recommended_topic": "graphs", "reason": "En düşük skor (%24), prerequisite'ler (arrays, trees) tamamlandı"}
+{
+  "recommended_topic": "graphs",
+  "reason_code": "lowest_score",
+  "reason": "En düşük skor (%24), ön koşullar tamam (dfs, bfs)",
+  "locale": "tr"
+}
 ```
 
-**Notlar**: Konu bağımlılıkları `data/topics.json`'da statik bir grafik
-olarak tutulur (bkz. örnek aşağıda). Seçim mantığı: prerequisite'leri
-tamamlanmış (skor eşik üstü) konular arasından en düşük skorlusu seçilir;
-son 3 denemede art arda başarısızlık varsa geçici olarak bir önceki/daha
-kolay konuya dönülür.
+`reason_code` makine okunur karardır: `"lowest_score"` (normal seçim),
+`"stuck_fallback"` (sıkışma, ön koşula dönüldü), `"stuck_no_prerequisite"`
+(sıkışma var ama dönülecek ön koşul yok). `reason` ise bu koda karşılık
+gelen **sabit TR/EN şablondan** üretilir ve profildeki
+`preferred_language`'e göre seçilir (i18n kuralı: kullanıcıya gösterilen
+her metin iki dilde). `locale` hangi dilin seçildiğini söyler.
+
+**Seçim kuralları** (`STUDENT_PROFILE_SCHEMA.md` → "Sonraki konu seçimi"):
+
+1. **Prerequisite eşiği**: bir konu, ancak tüm ön koşullarının skoru
+   **0.6** ve üzerindeyse aday olur. Ön koşulu olmayan konular her zaman
+   adaydır. (0.6, sabit skor tablosunda "2+ hint ile çözdü" seviyesine
+   denk gelir.)
+2. **En düşük skor**: adaylar arasından en düşük skorlusu seçilir;
+   eşitlikte `data/topics.json`'daki sıra kazanır.
+3. **Sıkışma koruması**: seçilen konunun `attempts` tablosundaki **kendi
+   son 3 denemesi** de `score <= 0.2` ise (araya başka konular girmiş
+   olabilir), o konunun **en düşük skorlu ön koşuluna** dönülür
+   (`stuck_fallback`). Ön koşulu yoksa konu değişmez, ama karar
+   `stuck_no_prerequisite` koduyla bildirilir — host daha kolay bir
+   problem seçebilir.
+
+Tool profili yalnızca **okur**: `current_focus` alanını değiştirmez, onu
+`update_profile` günceller (bkz. yukarıdaki `update_profile` notu).
+Profil yoksa (`assess_level` çağrılmamışsa) `LookupError` atar.
 
 `data/topics.json` örneği:
 

@@ -15,8 +15,8 @@ from pathlib import Path
 
 DEFAULT_DB_PATH = Path(__file__).resolve().parents[2] / "profile.db"
 
-#: `recent_errors` tablosunda konu başına saklanan en fazla satır.
-RECENT_ERRORS_PER_TOPIC = 3
+#: `recent_evidence` tablosunda konu başına saklanan en fazla satır.
+RECENT_EVIDENCE_PER_TOPIC = 3
 
 PROFILE_ROW_ID = 1
 
@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS topic_scores (
   score REAL NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS recent_errors (
+CREATE TABLE IF NOT EXISTS recent_evidence (
   topic TEXT NOT NULL,
   evidence TEXT NOT NULL,
   timestamp TEXT NOT NULL
@@ -72,8 +72,12 @@ def connect(db_path: Path | str | None = None) -> sqlite3.Connection:
 
 
 def init_db(connection: sqlite3.Connection) -> None:
-    """Tabloları oluşturur; varsa dokunmaz."""
+    """Tabloları oluşturur; varsa dokunmaz. Eski isimli tabloyu düşürür."""
     with connection:
+        # `recent_errors` → `recent_evidence` yeniden adlandırması: alan hem
+        # başarı hem başarısızlık kanıtı tutuyor. Production verisi olmadığı
+        # için eski tablo taşınmadan düşürülür.
+        connection.execute("DROP TABLE IF EXISTS recent_errors")
         connection.executescript(SCHEMA)
 
 
@@ -176,41 +180,41 @@ def seed_topic_scores(connection: sqlite3.Connection, scores: dict[str, float]) 
         )
 
 
-# --- recent_errors ----------------------------------------------------------
+# --- recent_evidence --------------------------------------------------------
 
 
-def add_recent_errors(
+def add_recent_evidence(
     connection: sqlite3.Connection,
     topic: str,
     evidence: list[str],
     *,
-    keep: int = RECENT_ERRORS_PER_TOPIC,
+    keep: int = RECENT_EVIDENCE_PER_TOPIC,
 ) -> None:
     """Evidence girdilerini ekler ve konuyu `keep` satıra budar."""
     timestamp = utc_now()
     with connection:
         connection.executemany(
-            "INSERT INTO recent_errors (topic, evidence, timestamp) VALUES (?, ?, ?)",
+            "INSERT INTO recent_evidence (topic, evidence, timestamp) VALUES (?, ?, ?)",
             [(topic, entry, timestamp) for entry in evidence],
         )
         # Aynı saniyede eklenen satırlar için rowid ikinci sıralama anahtarı.
         connection.execute(
-            "DELETE FROM recent_errors WHERE topic = ? AND rowid NOT IN ("
-            "  SELECT rowid FROM recent_errors WHERE topic = ? "
+            "DELETE FROM recent_evidence WHERE topic = ? AND rowid NOT IN ("
+            "  SELECT rowid FROM recent_evidence WHERE topic = ? "
             "  ORDER BY timestamp DESC, rowid DESC LIMIT ?"
             ")",
             (topic, topic, keep),
         )
 
 
-def get_recent_errors(
+def get_recent_evidence(
     connection: sqlite3.Connection,
     *,
-    keep: int = RECENT_ERRORS_PER_TOPIC,
+    keep: int = RECENT_EVIDENCE_PER_TOPIC,
 ) -> dict[str, list[str]]:
     """Konu → en yeni `keep` evidence girdisi (yeniden eskiye)."""
     rows = connection.execute(
-        "SELECT topic, evidence FROM recent_errors ORDER BY topic, timestamp DESC, rowid DESC"
+        "SELECT topic, evidence FROM recent_evidence ORDER BY topic, timestamp DESC, rowid DESC"
     ).fetchall()
     grouped: dict[str, list[str]] = {}
     for row in rows:
@@ -220,9 +224,9 @@ def get_recent_errors(
     return grouped
 
 
-def clear_recent_errors(connection: sqlite3.Connection) -> None:
+def clear_recent_evidence(connection: sqlite3.Connection) -> None:
     with connection:
-        connection.execute("DELETE FROM recent_errors")
+        connection.execute("DELETE FROM recent_evidence")
 
 
 # --- attempts ---------------------------------------------------------------

@@ -43,3 +43,28 @@ def _parse(raw: dict) -> dict[str, tuple[str, ...]]:
 def root_topics(topics: dict[str, tuple[str, ...]]) -> tuple[str, ...]:
     """Prerequisite'i olmayan konular — bir profilin başlayabileceği yerler."""
     return tuple(name for name, prerequisites in topics.items() if not prerequisites)
+
+
+#: Bir konunun "tamamlandı" sayılması için gereken skor (docs/TOOLS.md →
+#: get_next_topic). 0.6, sabit skor tablosunda "2+ hint ile çözdü" seviyesi.
+PREREQUISITE_THRESHOLD = 0.6
+
+
+def candidate_topics(
+    topics: dict[str, tuple[str, ...]],
+    scores: dict[str, float],
+    threshold: float = PREREQUISITE_THRESHOLD,
+) -> tuple[str, ...]:
+    """Tüm ön koşulları eşik üstünde olan konular; sıra dosyadaki sırayla."""
+    return tuple(
+        name
+        for name, prerequisites in topics.items()
+        if all(scores.get(prereq, 0.0) >= threshold for prereq in prerequisites)
+    )
+
+
+def lowest_scoring(candidates: tuple[str, ...], scores: dict[str, float]) -> str:
+    """Adaylar arasından en düşük skorlu konu; eşitlikte ilk sıra kazanır."""
+    if not candidates:
+        raise ValueError("no candidate topic to choose from")
+    return min(candidates, key=lambda topic: scores.get(topic, 0.0))

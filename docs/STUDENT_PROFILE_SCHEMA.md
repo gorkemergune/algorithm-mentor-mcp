@@ -12,7 +12,7 @@ class StudentProfile:
     user_id: str
     level: str                    # "beginner" | "intermediate" | "advanced"
     topic_scores: dict[str, float]  # 0.0 - 1.0 arası, konu bazlı yeterlilik
-    recent_errors: dict[str, list[str]]  # konu -> son 3 evidence girdisi (bkz. aşağıda)
+    recent_evidence: dict[str, list[str]]  # konu -> son 3 evidence girdisi (bkz. aşağıda)
     current_focus: str            # şu anki odak konu
     preferred_language: str       # "tr" | "en" — problem/hint metinlerinin dili
     history: list[Attempt]        # tüm denemelerin kaydı
@@ -26,7 +26,7 @@ dilden çıkarılır (host, ilk mesajın dilini iletir) ya da açıkça sorulabi
 `get_problem` ve `hint` tool'ları bu alanı varsayılan `locale` olarak
 kullanır — her çağrıda tekrar belirtmeye gerek kalmaz.
 
-`recent_errors`: sadece sayısal skor (`graphs: 0.63`) mentor için yetersiz
+`recent_evidence`: sadece sayısal skor (`graphs: 0.63`) mentor için yetersiz
 — "neden 0.63" sorusuna cevap veremez. Bu yüzden her konu için
 `review_solution.evidence`'tan gelen son 3 girdi ayrıca tutulur, örn.
 `{"graphs": ["confused BFS with DFS", "visited-state handling eksik"]}`.
@@ -139,7 +139,7 @@ CREATE TABLE topic_scores (
   score REAL NOT NULL
 );
 
-CREATE TABLE recent_errors (
+CREATE TABLE recent_evidence (
   topic TEXT NOT NULL,
   evidence TEXT NOT NULL,
   timestamp TEXT NOT NULL
@@ -161,7 +161,7 @@ CREATE TABLE attempts (
 
 `attempts` tablosu `StudentProfile.history`'nin kalıcı hali — asla
 budanmaz (v2'deki evaluation protocol için tam geçmiş gerekecek). Sadece
-`recent_errors` konu başına 3 satırla sınırlı tutulur.
+`recent_evidence` konu başına 3 satırla sınırlı tutulur.
 
 ## Seviye (level) güncelleme kuralı
 

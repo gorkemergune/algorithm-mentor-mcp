@@ -135,34 +135,44 @@ sınıflandırması (bkz. "Kapsam" bölümü).
 - `src/domain/topics.py` — `data/topics.json` yükleyicisi, prerequisite
   doğrulaması (bilinmeyen ön koşul → `TopicDataError`), `root_topics`.
 - `src/storage/sqlite.py` — şemadaki dört tablo (`profile` tek satır,
-  `topic_scores`, `recent_errors`, `attempts`), `connect`/`init_db`
-  (idempotent) ve CRUD. `recent_errors` konu başına 3 satıra budanır
+  `topic_scores`, `recent_evidence`, `attempts`), `connect`/`init_db`
+  (idempotent) ve CRUD. `recent_evidence` konu başına 3 satıra budanır
   (`timestamp DESC, rowid DESC`), `attempts` asla budanmaz. İş kuralı
   içermez, sadece veri okur/yazar.
 - `src/tools/assess_level.py` — `topics.json`'daki her konuyu `0.0` ile
   seed'ler, seviyeyi `beginner` yapar, `preferred_language`'i profile yazar.
   `recommended_start_topic` = prerequisite'siz konular arasından en düşük
-  skorlu. `retake=True` skorları yeniden seed'ler ve `recent_errors`'ı
+  skorlu. `retake=True` skorları yeniden seed'ler ve `recent_evidence`'ı
   temizler, `attempts`'e dokunmaz. Profil varsa ve `retake=False` ise
   idempotent.
 - `src/tools/update_profile.py` — skoru `mastery.is_valid_score` ile
   doğrular (`math.isclose`, `abs_tol=1e-9`), EMA'yı
   `mastery.update_topic_score`'a yaptırır, denemeyi `attempts`'e yazar,
-  evidence'ı `recent_errors`'a ekleyip budar, `level`'i yeniden hesaplar.
+  evidence'ı `recent_evidence`'a ekleyip budar, `level`'i yeniden hesaplar.
   Profil ya da konu satırı yoksa `LookupError` ("önce assess_level").
   Doğrulama başarısızsa hiçbir şey yazılmaz.
+- `src/tools/get_next_topic.py` — üç kural: ön koşul eşiği (0.6, konu
+  aday olmak için tüm ön koşulları bu skorun üstünde olmalı), adaylar
+  arasından en düşük skor (eşitlikte `topics.json` sırası) ve sıkışma
+  koruması (konunun **kendi** son 3 denemesi de `score <= 0.2` ise en
+  düşük skorlu ön koşula dönülür). Profili yalnızca okur, `current_focus`
+  yazmaz. `reason` sabit TR/EN şablondan, `reason_code` makine okunur
+  (`lowest_score` / `stuck_fallback` / `stuck_no_prerequisite`).
+- `src/domain/topics.py` → `PREREQUISITE_THRESHOLD`, `candidate_topics`,
+  `lowest_scoring` seçim yardımcıları.
 - `docs/TOOLS.md` → `submit_solution` altına **"Harness sözleşmesi"**
   başlığı eklendi (spesifikasyon kodu önceler kuralı).
 - `.gitignore`: `__pycache__/`, `*.pyc`, `.venv/`, `*.db`. Daha önce
   yanlışlıkla takip edilen 8 `.pyc` dosyası index'ten çıkarıldı.
 - Testler: mastery, get_problem, problem_loader, execution,
-  submit_solution, review_solution, storage, assess_level, update_profile
-  — **171 test, hepsi geçiyor** (`python3 -m pytest -q` → `171 passed`).
+  submit_solution, review_solution, storage, assess_level, update_profile,
+  get_next_topic — **195 test, hepsi geçiyor**
+  (`python3 -m pytest -q` → `195 passed`).
 
 ### Yarım / eksik
 
 - Hiç başlanmamış: `src/server.py` (MCP giriş noktası, tool kaydı).
-- Kodlanmamış tool'lar: `hint`, `get_next_topic`, `explain_approach`,
+- Kodlanmamış tool'lar: `hint`, `explain_approach`,
   `get_reference_approach`.
 - `StudentProfile` / `Attempt` için ayrı dataclass yazılmadı — profil
   durumu SQLite tablolarında yaşıyor, tool'lar sözlük döndürüyor. Şema
@@ -180,13 +190,22 @@ sınıflandırması (bkz. "Kapsam" bölümü).
 - Harness stdin'i test case'ler için kullanır; kullanıcı kodu `input()`
   çağırırsa case verisini tüketir (v1'de kabul edilen sınır, sözleşme
   gereği kullanıcı sadece `solve`'u doldurur).
+- `recent_errors` → **`recent_evidence`** olarak yeniden adlandırıldı
+  (alan hem başarı hem başarısızlık kanıtı tutuyor). Şema, tablo adı, tool
+  alanları ve testler güncellendi; `init_db` eski `recent_errors` tablosunu
+  düşürüyor (production verisi yok, taşıma yapılmadı).
+- `get_next_topic` için karara bağlananlar (TOOLS.md güncellendi): ön koşul
+  eşiği 0.6 sabit; sıkışma konunun kendi son 3 denemesine bakar (araya
+  başka konu girebilir); geri dönüş en düşük skorlu doğrudan ön koşula,
+  ön koşul yoksa konu sabit kalır ve `stuck_no_prerequisite` bildirilir;
+  `reason` TR/EN sabit şablondan üretilir, yanında `reason_code` döner.
 - Storage oturumunda karara bağlanan noktalar (TOOLS.md güncellendi):
   `assess_level` v1'de quiz yapmaz, sıfır seed'ler ve host'tan sayısal
   tahmin almaz; `preferred_language` artık `assess_level` parametresi;
   `retake` skorları sıfırlar ama geçmişi korur; `update_profile` dönüşü
   `level` de taşır. Ek olarak `update_profile`'a `hints_used` parametresi
   eklendi — `attempts` tablosu bu kolonu zorunlu tutuyor, skoru etkilemez.
-- `recent_errors`, adına rağmen yalnızca hataları değil `evidence`'ın
+- `recent_evidence`, adına rağmen yalnızca hataları değil `evidence`'ın
   tamamını tutar (başarı şablonları dahil) — TOOLS.md'nin harfi böyle.
 - `review_solution` için TOOLS.md'de tanımsız kalan iki nokta karara
   bağlandı ve doküman güncellendi: `suggested_topic_reinforcement` skor
@@ -200,10 +219,10 @@ sınıflandırması (bkz. "Kapsam" bölümü).
 
 ### Sıradaki adım
 
-1. `get_next_topic` — prerequisite grafiği (`src/domain/topics.py` hazır),
-   eşik üstü ön koşul kuralı, en düşük skor ve sıkışma koruması
-   (`attempts`'ten son 3 denemeye bakarak).
-2. `hint`, `explain_approach`, `get_reference_approach` — üçü de mevcut
-   `data/problems.json` alanlarını kullanır (hints TR/EN, reference_approach).
+1. `hint` — `data/problems.json`'daki TR/EN hint listelerinden
+   `attempt_number`'a göre kademeli ipucu; hint sayısı `update_profile`'a
+   `hints_used` olarak gidiyor.
+2. `explain_approach` + `get_reference_approach` — sözlü anlatım akışı
+   (anlatımı kaydet, referans etiketleri döndür, host karşılaştırsın).
 3. `src/server.py` — MCP giriş noktası, tool'ların stdio üzerinden kaydı;
    `profile.db` yolu ve tek bağlantı yönetimi burada toplanır.

@@ -47,14 +47,14 @@ def assess_level(
     if existing is None:
         db.create_profile(conn, level="beginner", preferred_language=preferred_language)
     else:
-        # retake: skorlar ve hata geçmişi sıfırlanır, `attempts` korunur.
+        # retake: skorlar ve kanıt geçmişi sıfırlanır, `attempts` korunur.
         db.update_profile_row(
             conn,
             level="beginner",
             preferred_language=preferred_language,
             current_focus=None,
         )
-        db.clear_recent_errors(conn)
+        db.clear_recent_evidence(conn)
 
     db.seed_topic_scores(conn, {topic: SEED_SCORE for topic in graph})
     summary = _summary(conn, graph)
