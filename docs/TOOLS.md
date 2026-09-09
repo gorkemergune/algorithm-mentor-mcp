@@ -90,44 +90,6 @@ geçirir, sonucu ve temel metrikleri döndürür.
 gerektirir, v2'ye ertelendi. `error` alanı runtime hatalarını (syntax,
 exception, timeout) taşır.
 
-### Harness sözleşmesi
-
-`data/problems.json`'daki `test_cases[].input` bir **JSON argüman listesi**dir
-(dış köşeli parantezler olmadan yazılır), `expected` ise **JSON değeri**dir:
-
-```python
-args = json.loads("[" + case.input + "]")   # "[2,7,11,15], 9" -> [[2,7,11,15], 9]
-result = solve(*args)                        # kullanıcının solve fonksiyonu
-passed = result == json.loads(case.expected)
-```
-
-- `input`, `"[" + input + "]"` şeklinde sarılıp `json.loads` ile parse edilir;
-  elde edilen liste `solve`'a **pozisyonel argüman** olarak açılır (`*args`).
-- Dönen değer `json.loads(expected)` ile karşılaştırılır (`"true"` → `True`,
-  `"[0,1]"` → `[0, 1]`).
-- Karşılaştırma **tam eşitlik** (`==`) ile yapılır; sıralama ya da tip farkı
-  v1'de ayrıca normalize edilmez (örn. set/list farkı problem yazarının
-  sorumluluğundadır, `expected` buna göre yazılır).
-- Kullanıcı sadece `starter_code`'daki `solve`'u doldurur — stdin okumak ya da
-  sonucu yazdırmak zorunda değildir.
-- `solve` bulunamazsa, `input`/`expected` JSON olarak parse edilemezse ya da
-  `solve` exception fırlatırsa: ilgili case `"passed": false` işaretlenir ve
-  hata, execution engine'in hata taşıma mekanizmasıyla `error` alanına yazılır.
-
-**Çalıştırma**: Tüm test case'ler (gizliler dahil) **tek** sandbox
-process'inde sırayla çalıştırılır; her case sonucu anında yazıldığı için
-timeout durumunda hangi case'te takılındığı bilinir — o case ve sonrası
-başarısız işaretlenir, `error` timeout'u bildirir. `test_results[].case`
-1'den başlar ve gizli case'leri de kapsar (yalnızca sıra numarası ve
-geçti/kaldı bilgisi döner, gizli girdinin kendisi asla sızmaz).
-`runtime_ms` tüm çalıştırmanın toplam süresidir, case başına değil.
-
-Sandbox `ExecutionEngine` arayüzünün arkasındadır (`src/execution/`):
-`execute(code, language, stdin, timeout)`. v1 implementasyonu `PythonRunner`
-— ayrı bir subprocess, izole yorumlayıcı (`-I`), CPU/bellek/dosya boyutu
-limitleri ve wall-clock timeout. Docker + çoklu dil v2'de aynı arayüzün
-altına eklenir.
-
 ---
 
 ## hint `v1`
@@ -205,9 +167,30 @@ yorumunu (doğal dil, `feedback` alanı) üretmek ve `explanation` durumunda
 göndermez. Bu, LLM'in profil verisini yanlışlıkla ya da hatalı yorumla
 bozmasını mimari olarak imkânsız kılar.
 
-`mistake_type` sınıflandırması basit kural tabanlı kontrollerle başlar
-(örn. boş input test case'i geçmedi → `missing_edge_case`), gelişmiş
-sınıflandırma v2.
+`mistake_type` sınıflandırması basit kural tabanlı kontrollerle başlar:
+
+- Tüm test case'leri geçti → `"none"`
+- Sadece `edge_case: true` etiketli case'ler başarısız → `"missing_edge_case"`
+- `edge_case: false` etiketli herhangi bir case başarısız → `"wrong_approach"`
+- `"inefficient"` v1'de tespit edilmez (karmaşıklık analizi gerektirir, v2)
+
+`edge_case: bool` etiketi `data/problems.json`'daki her `test_cases`
+girdisinde tutulur (bkz. örnek veri).
+
+`evidence` metinleri de sabit, dilden bağımsız şablonlardan üretilir (host
+bunları okuyup kullanıcının dilinde yorumlar, kendisi çeviri istemez):
+
+| Durum                                                 | evidence                                                   |
+| ----------------------------------------------------- | ---------------------------------------------------------- |
+| Geçti, hints_used=0                                  | `"Correct algorithm, no hints needed"`                   |
+| Geçti, hints_used=1                                  | `"Correct algorithm, needed one hint"`                   |
+| Geçti, hints_used>=2                                 | `"Correct algorithm, needed multiple hints"`             |
+| `attempt_type="explanation"`, reference_match=true  | `"Correct approach described verbally, no code written"` |
+| Geçmedi, mistake_type="missing_edge_case"            | `"Approach correct but missing edge case handling"`      |
+| Geçmedi, mistake_type="wrong_approach"               | `"Approach incorrect"`                                   |
+| `attempt_type="explanation"`, reference_match=false | `"Approach described did not match expected solution"`   |
+
+gelişmiş sınıflandırma v2.
 
 **Dil notu**: `mistake_type` ve `evidence` içindeki kod-etiketler dilden
 bağımsızdır; `feedback` alanı ise host tarafından kullanıcının konuştuğu
