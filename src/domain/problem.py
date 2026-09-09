@@ -28,6 +28,9 @@ class ProblemTestCase:
     input: str
     expected: str
     hidden: bool = False
+    #: Edge case mi? `review_solution` mistake_type'ı bu etikete göre ayırır
+    #: (bkz. docs/TOOLS.md → review_solution).
+    edge_case: bool = False
 
 
 @dataclass(frozen=True)
@@ -100,6 +103,7 @@ def _to_problem(raw: dict) -> Problem:
                 input=case["input"],
                 expected=case["expected"],
                 hidden=case.get("hidden", False),
+                edge_case=case.get("edge_case", False),
             )
             for case in raw.get("test_cases", [])
         ),

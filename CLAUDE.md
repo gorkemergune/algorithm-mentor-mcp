@@ -121,22 +121,32 @@ sınıflandırması (bkz. "Kapsam" bölümü).
   `__MENTOR_RESULT__` ile işaretlenir, kullanıcının debug print'leri
   ayrıştırmayı bozamaz; timeout'ta o ana kadar biten case'ler korunur,
   kalanlar başarısız sayılır. Dönen değer sadece `case`/`passed` taşır.
+- `src/domain/review.py` — `EVIDENCE_TEMPLATES` (7 sabit, dilden bağımsız
+  şablon), `mistake_type` sınıflandırması (`classify_code_mistake`,
+  `classify_explanation_mistake`) ve `suggested_reinforcement`. Skor burada
+  hesaplanmaz; o hâlâ yalnızca `mastery.py`'de.
+- `src/tools/review_solution.py` — skoru `mastery.attempt_score`'tan alır,
+  host'tan ham sayı kabul etmez. `mistake_type`, başarısız case'lerin
+  `edge_case` etiketinden türer (`error` metni sınıflandırmayı etkilemez).
+  `attempt_type="code"` ile boş `test_results` gelirse `ValueError` —
+  sessizce 0.2 üretmez. Dönen değer `feedback` alanı taşımaz.
+- `src/domain/problem.py` → `ProblemTestCase.edge_case` alanı eklendi,
+  `data/problems.json`'daki yeni etiket okunuyor.
 - `docs/TOOLS.md` → `submit_solution` altına **"Harness sözleşmesi"**
   başlığı eklendi (spesifikasyon kodu önceler kuralı).
 - `.gitignore`: `__pycache__/`, `*.pyc`, `.venv/`, `*.db`. Daha önce
   yanlışlıkla takip edilen 8 `.pyc` dosyası index'ten çıkarıldı.
 - Testler: `test_mastery.py`, `test_get_problem.py`, `test_problem_loader.py`,
-  `test_execution.py`, `test_submit_solution.py` — **77 test, hepsi geçiyor**
-  (`python3 -m pytest -q` → `77 passed`).
+  `test_execution.py`, `test_submit_solution.py`, `test_review_solution.py`
+  — **104 test, hepsi geçiyor** (`python3 -m pytest -q` → `104 passed`).
 
 ### Yarım / eksik
 
 - Hiç başlanmamış: `src/server.py` (MCP giriş noktası, tool kaydı),
   `src/storage/` (SQLite), `src/domain` içinde `StudentProfile` ve `Attempt`
   modelleri.
-- Kodlanmamış tool'lar: `assess_level`, `hint`, `review_solution`,
-  `update_profile`, `get_next_topic`, `explain_approach`,
-  `get_reference_approach`.
+- Kodlanmamış tool'lar: `assess_level`, `hint`, `update_profile`,
+  `get_next_topic`, `explain_approach`, `get_reference_approach`.
 
 ### Bilinen sınırlar / notlar
 
@@ -149,16 +159,22 @@ sınıflandırması (bkz. "Kapsam" bölümü).
 - Harness stdin'i test case'ler için kullanır; kullanıcı kodu `input()`
   çağırırsa case verisini tüketir (v1'de kabul edilen sınır, sözleşme
   gereği kullanıcı sadece `solve`'u doldurur).
+- `review_solution` için TOOLS.md'de tanımsız kalan iki nokta karara
+  bağlandı ve doküman güncellendi: `suggested_topic_reinforcement` skor
+  1.0'ın altındaysa konuyu döner (1.0'da `null`), ve tool `feedback` alanı
+  döndürmez (doğal dil yorumu host'un). Ayrıca `explanation` denemelerinde
+  `mistake_type`, `reference_match`'ten türer (`true` → none, `false` →
+  wrong_approach).
 - `get_problem` eşleşenler arasından ilkini seçer; "daha önce çözülmüşü
   atla" mantığı `src/storage` gelince eklenecek.
 - Problem seti hâlâ ince: sadece `arrays`/`hashmap`, sadece `easy`.
 
 ### Sıradaki adım
 
-1. `review_solution` — `mastery.attempt_score`'u çağırır (kendi skorunu
-   hesaplamaz), `mistake_type` için basit kural tabanlı sınıflandırma.
-2. `src/storage/` (SQLite) + `StudentProfile`/`Attempt` modelleri, ardından
-   `update_profile` (skoru `mastery`'ye doğrulatır, `recent_errors`'a son 3
-   evidence'ı yazar).
-3. Sonra `get_next_topic` (prerequisite grafiği + sıkışma koruması) ve
+1. `src/storage/` (SQLite) + `StudentProfile` / `Attempt` modelleri.
+2. `update_profile` — skoru `mastery.update_topic_score`'a doğrulatır,
+   `recent_errors[topic]`'e `review_solution.evidence`'tan son 3 girdiyi
+   yazar, `level`'ı `mastery.level_for_scores` ile yeniler.
+3. Sonra `get_next_topic` (prerequisite grafiği + sıkışma koruması),
+   ardından `hint` / `explain_approach` / `get_reference_approach` ve
    `src/server.py` ile tool'ların MCP'ye kaydı.

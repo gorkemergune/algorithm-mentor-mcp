@@ -141,9 +141,8 @@ karar).
 ```json
 {
   "score": 0.8,
-  "evidence": ["Correct algorithm", "Minor implementation bug: off-by-one in loop bound"],
+  "evidence": ["Correct algorithm, needed one hint"],
   "mistake_type": "missing_edge_case | wrong_approach | inefficient | none",
-  "feedback": "Çözüm doğru ama boş liste durumunu kontrol etmiyorsun.",
   "suggested_topic_reinforcement": "arrays"
 }
 ```
@@ -180,6 +179,10 @@ metnidir, iki kanal karıştırılmaz):
 `edge_case: bool` etiketi `data/problems.json`'daki her `test_cases`
 girdisinde tutulur (bkz. örnek veri).
 
+`attempt_type="explanation"` için aynı alan anlatımın doğruluğundan
+türetilir: `reference_match=true` → `"none"`, `reference_match=false` →
+`"wrong_approach"` (anlatılan yaklaşım beklenenle örtüşmüyor demektir).
+
 `attempt_type="code"` ama `test_results` boş/`None` geldiğinde tool hata
 fırlatır (`ValueError` benzeri) — sessizce `0.2` üretmez. Bu durum gerçek
 bir başarısız denemeyi değil, çağrı zincirinde bir wiring hatasını
@@ -204,10 +207,16 @@ değil, globaldir (tıpkı `mastery.py`'deki skor formülü gibi tek kaynaklı):
 
 gelişmiş sınıflandırma v2.
 
+`suggested_topic_reinforcement`: `score` 1.0'ın altındaysa problemin
+konusu, tam 1.0 ise `null` döner. Yani hint'le çözülen ya da yalnızca
+sözlü anlatılan bir problem de konuyu pekiştirme listesinde tutar;
+hint'siz tam çözüm konuyu serbest bırakır.
+
 **Dil notu**: `mistake_type` ve `evidence` içindeki kod-etiketler dilden
-bağımsızdır; `feedback` alanı ise host tarafından kullanıcının konuştuğu
-dilde serbestçe üretilir. Bu yüzden bu tool'a `locale` parametresi
-eklemeye gerek yok.
+bağımsızdır. Kod kalitesi üzerine doğal dil yorumunu host, kullanıcının
+konuştuğu dilde kendi mesajında üretir — **tool bir `feedback` alanı
+döndürmez**, çünkü server serbest metin üretmez (bkz. CLAUDE.md → i18n).
+Bu yüzden bu tool'a `locale` parametresi de eklenmez.
 
 ---
 
