@@ -62,6 +62,9 @@ doğrudan manipüle etmesini mimari olarak imkânsız kılar — mentor sadece
 girdiler sağlar; skoru hesaplayan her zaman sunucu tarafındaki sabit
 tablodur.
 
+**Karşılaştırma toleransı**: `score`'un bu 5 değerden biri olup olmadığı
+tam float eşitliğiyle (`==`) değil, `math.isclose(score, allowed_value, abs_tol=1e-9)` ile kontrol edilir — float temsil hatalarının (`0.1+0.2 != 0.3` sınıfı sorunlar) geçerli bir skoru reddetmesini önlemek için.
+
 ## Konu listesi ve bağımlılık grafiği (v1)
 
 `arrays`, `strings`, `hashmap`, `two_pointers`, `sliding_window`,
@@ -106,6 +109,59 @@ ek sinyalleri v1'de skorlamaya katmıyoruz — formül karmaşıklaştıkça
 progress bar'ların "neden bu sayı" sorusuna cevap vermek zorlaşır. Basit
 ve açıklanabilir formülle başlayıp veriler biriktikçe (gerçek kullanım
 sonrası) ağırlıkları gözden geçirmek daha sağlıklı.
+
+**`topic_scores` ilk değeri**: `assess_level` ilk kez çağrıldığında,
+`data/topics.json`'daki her konu için `StudentProfile.topic_scores`
+oluşturulur — `assess_level`'ın ürettiği `topic_estimates`'te değeri
+varsa o, yoksa `0.0` ile başlar. Bu satır oluşmadan (yani `assess_level`
+hiç çağrılmadan) `update_profile` çağrılırsa tool hata fırlatır — "önce
+assess_level çağrılmalı" zorunluluğu, `Attempt.score` kuralıyla aynı
+mantık: sistem her zaman tutarlı bir başlangıç durumundan ilerler.
+
+## Depolama (SQLite) — v1
+
+Tek kullanıcılı yerel kurulum (her kullanıcı kendi repo kopyasını kendi
+makinesinde çalıştırır, bkz. `README.md` kurulum adımları) — bu yüzden
+`user_id` alanı tabloya girmez, tek satırlık `profile` tablosu yeterli.
+
+```sql
+CREATE TABLE profile (
+  id INTEGER PRIMARY KEY CHECK (id = 1),  -- tek satır garantisi
+  level TEXT NOT NULL,
+  current_focus TEXT,
+  preferred_language TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE TABLE topic_scores (
+  topic TEXT PRIMARY KEY,
+  score REAL NOT NULL
+);
+
+CREATE TABLE recent_errors (
+  topic TEXT NOT NULL,
+  evidence TEXT NOT NULL,
+  timestamp TEXT NOT NULL
+);
+-- Sorgu sırasında topic başına en yeni 3 satır alınır (ORDER BY timestamp DESC LIMIT 3);
+-- eski satırlar update_profile sırasında budanır, tabloda sonsuz büyümez.
+
+CREATE TABLE attempts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  problem_id TEXT NOT NULL,
+  topic TEXT NOT NULL,
+  score REAL NOT NULL,
+  evidence TEXT NOT NULL,     -- JSON-encoded list[str]
+  hints_used INTEGER NOT NULL,
+  mistake_type TEXT,
+  timestamp TEXT NOT NULL
+);
+```
+
+`attempts` tablosu `StudentProfile.history`'nin kalıcı hali — asla
+budanmaz (v2'deki evaluation protocol için tam geçmiş gerekecek). Sadece
+`recent_errors` konu başına 3 satırla sınırlı tutulur.
 
 ## Seviye (level) güncelleme kuralı
 

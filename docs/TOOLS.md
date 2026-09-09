@@ -13,8 +13,12 @@ Durum etiketleri: `v1` (şimdi yapılacak), `v2` (ertelendi, sadece tanım var).
 **Açıklama**: Kullanıcıya birkaç kısa/karma zorluk seviyesinde soru çözdürüp
 başlangıç seviyesini ve zayıf/güçlü olduğu konu başlıklarını tahmin eder.
 
-**Parametreler**: yok (yeni kullanıcı için otomatik tetiklenir) ya da
-`retake: bool` (mevcut kullanıcı yeniden değerlendirme isterse).
+**Parametreler**:
+
+- `preferred_language: str` ("tr" | "en" — host, kullanıcının ilk mesajının
+  dilini geçer; profile yazılır ve `get_problem`/`hint` için varsayılan
+  `locale` olur). Desteklenmeyen bir değer `ValueError` ile reddedilir.
+- `retake: bool` (mevcut kullanıcı yeniden değerlendirme isterse)
 
 **Dönen değer**:
 
@@ -26,8 +30,26 @@ başlangıç seviyesini ve zayıf/güçlü olduğu konu başlıklarını tahmin 
 }
 ```
 
-**Örnek çağrı**: `assess_level()` → yukarıdaki gibi bir profil taslağı
-üretir, bu taslak `StudentProfile`'a yazılır.
+**Örnek çağrı**: `assess_level(preferred_language="tr")` → yukarıdaki gibi
+bir profil taslağı üretir, bu taslak `StudentProfile`'a yazılır.
+
+**Seed kuralı (v1)**: Tool kullanıcıya soru çözdürmez — host'tan sayısal
+tahmin de kabul etmez (mimari kural: host asla ham skor göndermez). İlk
+çağrıda `data/topics.json`'daki **her konu** `0.0` ile seed'lenir,
+`estimated_level` `"beginner"` olur ve dönen `topic_estimates` bu seed'in
+kendisidir. Gerçek ölçüm normal döngüde (`review_solution` →
+`update_profile`) birikir. Kullanıcıya soru sorarak ölçen gerçek
+değerlendirme akışı v2'ye ertelendi.
+
+**`recommended_start_topic`**: prerequisite'i olmayan konular arasından en
+düşük skorlusu; eşitlikte `data/topics.json`'daki ilk sıra kazanır. Sıfır
+seed'li yeni profilde bu `arrays` olur.
+
+**Tekrar çağrılırsa**: Profil zaten varsa ve `retake=False` ise hiçbir şey
+sıfırlanmaz — mevcut `level`/`topic_scores` olduğu gibi döner (idempotent).
+`retake=True` ise `topic_scores` yeniden seed'lenir ve `recent_errors`
+temizlenir; `attempts` tablosuna **dokunulmaz** (şemadaki "history asla
+budanmaz" kuralı).
 
 ---
 
@@ -147,6 +169,10 @@ karar).
 }
 ```
 
+**Not**: `feedback` alanı yoktur — server serbest doğal dil metni üretmez
+(bkz. mimari karar). Host, `score`/`evidence`/`mistake_type`'tan kendi
+doğal dil yorumunu üretir.
+
 **Notlar (mimari karar — kritik)**: `score` alanı **sabit bir tablodan**
 hesaplanır, host tarafından serbestçe seçilemez:
 
@@ -179,10 +205,6 @@ metnidir, iki kanal karıştırılmaz):
 `edge_case: bool` etiketi `data/problems.json`'daki her `test_cases`
 girdisinde tutulur (bkz. örnek veri).
 
-`attempt_type="explanation"` için aynı alan anlatımın doğruluğundan
-türetilir: `reference_match=true` → `"none"`, `reference_match=false` →
-`"wrong_approach"` (anlatılan yaklaşım beklenenle örtüşmüyor demektir).
-
 `attempt_type="code"` ama `test_results` boş/`None` geldiğinde tool hata
 fırlatır (`ValueError` benzeri) — sessizce `0.2` üretmez. Bu durum gerçek
 bir başarısız denemeyi değil, çağrı zincirinde bir wiring hatasını
@@ -207,16 +229,16 @@ değil, globaldir (tıpkı `mastery.py`'deki skor formülü gibi tek kaynaklı):
 
 gelişmiş sınıflandırma v2.
 
-`suggested_topic_reinforcement`: `score` 1.0'ın altındaysa problemin
-konusu, tam 1.0 ise `null` döner. Yani hint'le çözülen ya da yalnızca
-sözlü anlatılan bir problem de konuyu pekiştirme listesinde tutar;
-hint'siz tam çözüm konuyu serbest bırakır.
+`suggested_topic_reinforcement` kuralı: `score < 1.0` ise denemenin
+konusu (`topic`) döner, `score == 1.0` ise `null`. Gerekçe: 0.6 gibi
+ara skorlar da (hint'lerle geçti) tam kavrama değildir, sadece tam
+başarısızlıkta değil kısmi başarıda da pekiştirme önerisi anlamlı.
 
 **Dil notu**: `mistake_type` ve `evidence` içindeki kod-etiketler dilden
-bağımsızdır. Kod kalitesi üzerine doğal dil yorumunu host, kullanıcının
-konuştuğu dilde kendi mesajında üretir — **tool bir `feedback` alanı
-döndürmez**, çünkü server serbest metin üretmez (bkz. CLAUDE.md → i18n).
-Bu yüzden bu tool'a `locale` parametresi de eklenmez.
+bağımsızdır — server hiçbir serbest doğal dil metni üretmez (`feedback`
+alanı yoktur, bkz. Dönen değer). Doğal dil yorumunu tamamen host üretir,
+kullanıcının konuştuğu dilde. Bu yüzden bu tool'a `locale` parametresi
+eklemeye gerek yok.
 
 ---
 
@@ -236,14 +258,36 @@ kendi hesapladığı bir skor ya da mastery değeri kabul etmez.
   çağrıyı reddeder)
 - `evidence: list[str]` (`review_solution.evidence`)
 - `mistake_type: str | null`
+- `hints_used: int` (varsayılan `0`) — `attempts` tablosu bu alanı zorunlu
+  tutuyor (bkz. `STUDENT_PROFILE_SCHEMA.md` → Depolama). Skoru etkilemez,
+  skor zaten `review_solution`'da hesaplanmıştır; burada yalnızca geçmişe
+  kaydedilir.
 
 **Dönen değer**: Güncellenmiş `StudentProfile` özeti (bkz.
-`STUDENT_PROFILE_SCHEMA.md`) — `topic_scores`, `recent_errors`.
+`STUDENT_PROFILE_SCHEMA.md`) — `topic_scores`, `recent_errors`, `level`:
+
+```json
+{
+  "topic_scores": {"arrays": 0.72, "graphs": 0.24},
+  "recent_errors": {"arrays": ["Approach incorrect"]},
+  "level": "beginner"
+}
+```
+
+`level`, her güncellemede `topic_scores` ortalamasından yeniden hesaplanır
+(şemadaki eşikler) ve `profile` tablosuna yazılır. `current_focus` da
+güncellenen konuya çekilir. `recent_errors` konu başına en yeni 3 girdiyi
+**yeniden eskiye** sıralı döner.
 
 **Notlar**: EMA formülü şema dosyasında tanımlı — bu tool sadece formülü
 uygular (`yeni_skor = eski_skor*(1-alpha) + score*alpha`), formülü ya da
 `score`'un kendisini icat etmez. `evidence` listesinden en fazla son 3
 girdi `StudentProfile.recent_errors[topic]`'e yazılır (eskiler düşer).
+`score` doğrulaması tam eşitlik yerine `math.isclose(score, allowed, abs_tol=1e-9)` ile yapılır (bkz. `STUDENT_PROFILE_SCHEMA.md`).
+
+**Ön koşul**: `topic_scores`'ta ilgili konu satırı yoksa (yani
+`assess_level` hiç çağrılmamışsa) tool hata fırlatır — profil olmadan
+güncelleme yapılamaz.
 
 ---
 
