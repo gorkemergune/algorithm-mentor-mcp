@@ -160,20 +160,26 @@ sınıflandırması (bkz. "Kapsam" bölümü).
   (`lowest_score` / `stuck_fallback` / `stuck_no_prerequisite`).
 - `src/domain/topics.py` → `PREREQUISITE_THRESHOLD`, `candidate_topics`,
   `lowest_scoring` seçim yardımcıları.
+- `src/tools/hint.py` — `data/problems.json`'daki TR/EN hint listesinden
+  `attempt_number`'a karşılık geleni döner; liste sonunu aşan deneme
+  numarası en son (en açık) hint'i tekrar verir, hata vermez.
+  `attempt_number < 1` reddedilir. `locale` boşsa sırasıyla
+  `preferred_language` argümanı → profildeki `preferred_language` →
+  İngilizce. Profile yazmaz, sadece okur.
+- `src/domain/problem.py` → `Problem.localized_hints(locale)`.
 - `docs/TOOLS.md` → `submit_solution` altına **"Harness sözleşmesi"**
   başlığı eklendi (spesifikasyon kodu önceler kuralı).
 - `.gitignore`: `__pycache__/`, `*.pyc`, `.venv/`, `*.db`. Daha önce
   yanlışlıkla takip edilen 8 `.pyc` dosyası index'ten çıkarıldı.
 - Testler: mastery, get_problem, problem_loader, execution,
   submit_solution, review_solution, storage, assess_level, update_profile,
-  get_next_topic — **195 test, hepsi geçiyor**
-  (`python3 -m pytest -q` → `195 passed`).
+  get_next_topic, hint — **216 test, hepsi geçiyor**
+  (`python3 -m pytest -q` → `216 passed`).
 
 ### Yarım / eksik
 
 - Hiç başlanmamış: `src/server.py` (MCP giriş noktası, tool kaydı).
-- Kodlanmamış tool'lar: `hint`, `explain_approach`,
-  `get_reference_approach`.
+- Kodlanmamış tool'lar: `explain_approach`, `get_reference_approach`.
 - `StudentProfile` / `Attempt` için ayrı dataclass yazılmadı — profil
   durumu SQLite tablolarında yaşıyor, tool'lar sözlük döndürüyor. Şema
   dosyasındaki sınıflar bugün tabloların karşılığı; ihtiyaç doğarsa
@@ -194,6 +200,8 @@ sınıflandırması (bkz. "Kapsam" bölümü).
   (alan hem başarı hem başarısızlık kanıtı tutuyor). Şema, tablo adı, tool
   alanları ve testler güncellendi; `init_db` eski `recent_errors` tablosunu
   düşürüyor (production verisi yok, taşıma yapılmadı).
+- `hint`, hint sayısını kendisi saymaz ve profile yazmaz — `hints_used`
+  host tarafından `review_solution`/`update_profile`'a geçirilir.
 - `get_next_topic` için karara bağlananlar (TOOLS.md güncellendi): ön koşul
   eşiği 0.6 sabit; sıkışma konunun kendi son 3 denemesine bakar (araya
   başka konu girebilir); geri dönüş en düşük skorlu doğrudan ön koşula,
@@ -219,10 +227,11 @@ sınıflandırması (bkz. "Kapsam" bölümü).
 
 ### Sıradaki adım
 
-1. `hint` — `data/problems.json`'daki TR/EN hint listelerinden
-   `attempt_number`'a göre kademeli ipucu; hint sayısı `update_profile`'a
-   `hints_used` olarak gidiyor.
-2. `explain_approach` + `get_reference_approach` — sözlü anlatım akışı
-   (anlatımı kaydet, referans etiketleri döndür, host karşılaştırsın).
-3. `src/server.py` — MCP giriş noktası, tool'ların stdio üzerinden kaydı;
-   `profile.db` yolu ve tek bağlantı yönetimi burada toplanır.
+1. `explain_approach` + `get_reference_approach` — sözlü anlatım akışı:
+   anlatımı kaydet, referans etiketlerini (`reference_approach`) döndür,
+   host karşılaştırıp `reference_match` boolean'ını üretsin. Anlatımın
+   nereye kaydedileceği (yeni tablo mu, `attempts` mi) kararlaştırılmalı.
+2. `src/server.py` — MCP giriş noktası, dokuz tool'un stdio üzerinden
+   kaydı; `profile.db` yolu ve tek bağlantı yönetimi burada toplanır.
+3. Problem seti hâlâ ince — `get_next_topic` gerçekçi çalışsın diye
+   arrays/hashmap dışındaki konulara problem eklenmeli.

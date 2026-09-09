@@ -55,6 +55,10 @@ class Problem:
     def localized_prompt(self, locale: str) -> str:
         return self.localized(self.prompt, locale)
 
+    def localized_hints(self, locale: str) -> list[str]:
+        """Kademeli hint listesi (`hint` tool'u için), locale'e göre."""
+        return self.hints.get(locale) or self.hints.get(FALLBACK_LOCALE, [])
+
     def visible_test_cases(self) -> tuple[ProblemTestCase, ...]:
         """Kullanıcıya gösterilebilir test case'ler — gizliler `submit_solution`'a kalır."""
         return tuple(case for case in self.test_cases if not case.hidden)
