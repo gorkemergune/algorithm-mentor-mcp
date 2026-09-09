@@ -167,7 +167,10 @@ yorumunu (doğal dil, `feedback` alanı) üretmek ve `explanation` durumunda
 göndermez. Bu, LLM'in profil verisini yanlışlıkla ya da hatalı yorumla
 bozmasını mimari olarak imkânsız kılar.
 
-`mistake_type` sınıflandırması basit kural tabanlı kontrollerle başlar:
+`mistake_type` sınıflandırması `test_results` + `data/problems.json`'daki
+`edge_case: bool` etiketine göre belirlenir (`error` alanı bu
+sınıflandırmayı etkilemez — o sadece kullanıcıya gösterilecek ham hata
+metnidir, iki kanal karıştırılmaz):
 
 - Tüm test case'leri geçti → `"none"`
 - Sadece `edge_case: true` etiketli case'ler başarısız → `"missing_edge_case"`
@@ -177,8 +180,17 @@ bozmasını mimari olarak imkânsız kılar.
 `edge_case: bool` etiketi `data/problems.json`'daki her `test_cases`
 girdisinde tutulur (bkz. örnek veri).
 
+`attempt_type="code"` ama `test_results` boş/`None` geldiğinde tool hata
+fırlatır (`ValueError` benzeri) — sessizce `0.2` üretmez. Bu durum gerçek
+bir başarısız denemeyi değil, çağrı zincirinde bir wiring hatasını
+gösterir (submit_solution atlanmış/yanlış geçirilmiş) ve `update_profile`
+tool'unun "host ham sayı göndermesin" prensibiyle aynı mantıkla korunur.
+
 `evidence` metinleri de sabit, dilden bağımsız şablonlardan üretilir (host
-bunları okuyup kullanıcının dilinde yorumlar, kendisi çeviri istemez):
+bunları okuyup kullanıcının dilinde yorumlar, kendisi çeviri istemez).
+Bu şablonlar `data/problems.json`'da DEĞİL, `src/domain/review.py`
+içindeki `EVIDENCE_TEMPLATES` sabitinde tutulur — çünkü probleme özgü
+değil, globaldir (tıpkı `mastery.py`'deki skor formülü gibi tek kaynaklı):
 
 | Durum                                                 | evidence                                                   |
 | ----------------------------------------------------- | ---------------------------------------------------------- |
