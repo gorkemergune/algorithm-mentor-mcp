@@ -93,56 +93,72 @@ sınıflandırması (bkz. "Kapsam" bölümü).
 > Bu bölümü her oturum sonunda güncelle. Bir sonraki Claude Code oturumu
 > buradan devam noktasını anlar.
 
-**Durum tespiti (2026-09-10 oturumu, kod yazılmadı — sadece envanter).**
-
 ### Biten (test edilmiş, spesifikasyona uyuyor)
 
 - `src/domain/mastery.py` — sabit skor tablosu (`attempt_score`), skor
   doğrulama (`is_valid_score`), EMA (`update_topic_score`, tablo dışı skoru
-  reddeder), seviye eşikleri (`level_for_scores`). `docs/TOOLS.md` →
-  `review_solution` tablosu ve şemadaki formül/eşiklerle birebir uyumlu.
+  reddeder), seviye eşikleri (`level_for_scores`).
 - `src/domain/problem.py` — `Problem`/`ProblemTestCase` modelleri,
-  `data/problems.json` yükleyicisi (lru_cache'li), locale çözümleme
-  (`normalize_locale`), gizli test case filtresi.
-- `src/tools/get_problem.py` — `docs/TOOLS.md` → `get_problem` dönen
-  değeriyle birebir aynı alanlar. Hint / referans yaklaşım / gizli test
-  case çıktıya sızmıyor; `locale` boşsa `preferred_language`'e düşüyor.
-- Testler: `tests/test_mastery.py` + `tests/test_get_problem.py`,
-  **28 test, hepsi geçiyor** (`python3 -m pytest -q` → `28 passed`).
-- Veri: `data/problems.json` (2 problem, TR/EN + hints + reference_approach),
-  `data/topics.json` (11 konu, prerequisite grafiği) — şemadaki konu
-  listesiyle uyumlu.
+  `data/problems.json` yükleyicisi, locale çözümleme, gizli test case
+  filtresi. **Yükleme anında i18n doğrulaması**: `title`/`prompt`/`hints`
+  alanlarında TR veya EN eksikse `ProblemDataError` — mesaj hangi
+  `problem_id`'nin hangi alanında hangi dilin eksik olduğunu söyler.
+- `src/tools/get_problem.py` — TOOLS.md'deki dönen değerle birebir; hint,
+  referans yaklaşım ve gizli test case çıktıya sızmıyor.
+- `src/execution/engine.py` — `ExecutionEngine` soyut arayüzü
+  (`execute(code, language, stdin, timeout)`), `ExecutionResult`
+  (stdout/stderr/exit_code/runtime_ms/timed_out/error) ve
+  `UnsupportedLanguageError`.
+- `src/execution/python_runner.py` — `PythonRunner`: geçici dizinde izole
+  yorumlayıcı (`python -I -B`), kendi process grubu, wall-clock timeout
+  (varsayılan 5 sn) ve zaman aşımında `killpg` ile torunlar dahil temizlik,
+  RLIMIT_CPU/FSIZE/AS limitleri, çıktı kısaltma (64 KB). `describe_error`
+  syntax/exception/timeout durumunu tek satırlık `error` metnine çevirir.
+- `src/tools/submit_solution.py` — TOOLS.md → "Harness sözleşmesi"nin
+  uygulaması: test case'ler tek sandbox process'ine stdin'den JSON olarak
+  verilir, `solve(*args)` çağrılır, sonuç `json.loads(expected)` ile tam
+  eşitlik (`==`) üzerinden karşılaştırılır. Sonuç satırları
+  `__MENTOR_RESULT__` ile işaretlenir, kullanıcının debug print'leri
+  ayrıştırmayı bozamaz; timeout'ta o ana kadar biten case'ler korunur,
+  kalanlar başarısız sayılır. Dönen değer sadece `case`/`passed` taşır.
+- `docs/TOOLS.md` → `submit_solution` altına **"Harness sözleşmesi"**
+  başlığı eklendi (spesifikasyon kodu önceler kuralı).
+- `.gitignore`: `__pycache__/`, `*.pyc`, `.venv/`, `*.db`. Daha önce
+  yanlışlıkla takip edilen 8 `.pyc` dosyası index'ten çıkarıldı.
+- Testler: `test_mastery.py`, `test_get_problem.py`, `test_problem_loader.py`,
+  `test_execution.py`, `test_submit_solution.py` — **77 test, hepsi geçiyor**
+  (`python3 -m pytest -q` → `77 passed`).
 
 ### Yarım / eksik
 
-- Yarım bırakılmış dosya **yok** — mevcut üç modül de kendi içinde
-  tamamlanmış durumda. Eksik olan, henüz hiç başlanmamış katmanlar.
 - Hiç başlanmamış: `src/server.py` (MCP giriş noktası, tool kaydı),
-  `src/execution/` (`engine.py` + `python_runner.py`), `src/storage/`
-  (SQLite), `src/domain` içinde `StudentProfile` ve `Attempt` modelleri.
-- `get_problem` dışındaki 8 tool'un hiçbiri kodlanmadı: `assess_level`,
-  `submit_solution`, `hint`, `review_solution`, `update_profile`,
-  `get_next_topic`, `explain_approach`, `get_reference_approach`.
-- Klasör yapısındaki `tests/test_execution.py`, `tests/test_next_topic.py`,
-  `tests/test_tools.py` henüz yok.
+  `src/storage/` (SQLite), `src/domain` içinde `StudentProfile` ve `Attempt`
+  modelleri.
+- Kodlanmamış tool'lar: `assess_level`, `hint`, `review_solution`,
+  `update_profile`, `get_next_topic`, `explain_approach`,
+  `get_reference_approach`.
 
-### Bilinen sapmalar / küçük notlar
+### Bilinen sınırlar / notlar
 
+- **Bellek limiti macOS'ta uygulanmıyor**: `RLIMIT_AS` burada setrlimit
+  hatası veriyor, `PythonRunner` bunu yutup devam ediyor — macOS'ta koruma
+  CPU + wall-clock limitleridir, Linux'ta üçü de geçerli. Docker'a geçince
+  (v2) bu fark kapanır.
+- Sandbox v1'de ağ/dosya sistemi erişimini ayrıca kısıtlamıyor; izolasyon
+  ayrı process + geçici dizin + kaynak limitleri seviyesinde.
+- Harness stdin'i test case'ler için kullanır; kullanıcı kodu `input()`
+  çağırırsa case verisini tüketir (v1'de kabul edilen sınır, sözleşme
+  gereği kullanıcı sadece `solve`'u doldurur).
 - `get_problem` eşleşenler arasından ilkini seçer; "daha önce çözülmüşü
-  atla" mantığı `src/storage` gelince eklenecek (kodda not düşülü).
-- `Problem.localized`, çok dilli alanda `en` anahtarı yoksa `KeyError`
-  atar — veri doğrulaması (yükleme anında iki dilin de varlığını kontrol)
-  henüz yok.
-- Problem seti hâlâ ince: sadece `arrays`/`hashmap` ve sadece `easy`.
-  `get_next_topic` gerçekçi test edilebilmek için başka konulara da
-  problem gerekiyor.
-- `.gitignore` `__pycache__/` içermiyor; pytest sonrası dizinler
-  untracked görünüyor.
+  atla" mantığı `src/storage` gelince eklenecek.
+- Problem seti hâlâ ince: sadece `arrays`/`hashmap`, sadece `easy`.
 
 ### Sıradaki adım
 
-1. `src/execution/engine.py` (ExecutionEngine arayüzü) + `python_runner.py`
-   (subprocess + timeout/resource limit) ve `tests/test_execution.py`.
-2. `submit_solution` → `review_solution` (skoru `mastery.attempt_score`'tan
-   alır) → `update_profile` zinciri; `update_profile` için `src/storage`
-   (SQLite) ve `StudentProfile`/`Attempt` modelleri gerekecek.
+1. `review_solution` — `mastery.attempt_score`'u çağırır (kendi skorunu
+   hesaplamaz), `mistake_type` için basit kural tabanlı sınıflandırma.
+2. `src/storage/` (SQLite) + `StudentProfile`/`Attempt` modelleri, ardından
+   `update_profile` (skoru `mastery`'ye doğrulatır, `recent_errors`'a son 3
+   evidence'ı yazar).
+3. Sonra `get_next_topic` (prerequisite grafiği + sıkışma koruması) ve
+   `src/server.py` ile tool'ların MCP'ye kaydı.

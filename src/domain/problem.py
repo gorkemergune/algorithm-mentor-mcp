@@ -17,6 +17,9 @@ FALLBACK_LOCALE = "en"
 
 DIFFICULTIES = ("easy", "medium", "hard")
 
+#: Yükleme anında iki dilin de zorunlu olduğu alanlar (CLAUDE.md → i18n kuralı).
+REQUIRED_BILINGUAL_FIELDS = ("title", "prompt", "hints")
+
 PROBLEMS_PATH = Path(__file__).resolve().parents[2] / "data" / "problems.json"
 
 
@@ -54,7 +57,37 @@ class Problem:
         return tuple(case for case in self.test_cases if not case.hidden)
 
 
+class ProblemDataError(ValueError):
+    """`data/problems.json` şema/i18n kuralını ihlal ettiğinde atılır."""
+
+
+def _validate_bilingual(raw: dict) -> None:
+    """`title`/`prompt`/`hints` alanlarının hem TR hem EN taşıdığını doğrular.
+
+    TR/EN çift dil v1'den itibaren zorunlu (bkz. CLAUDE.md → i18n); eksik dil
+    çalışma anında sessizce EN'e düşmek yerine yüklemede patlamalı.
+    """
+    problem_id = raw.get("id", "<id eksik>")
+    for field_name in REQUIRED_BILINGUAL_FIELDS:
+        if field_name not in raw:
+            raise ProblemDataError(f"problem {problem_id!r}: '{field_name}' alanı eksik")
+        value = raw[field_name]
+        if not isinstance(value, dict):
+            raise ProblemDataError(
+                f"problem {problem_id!r}: '{field_name}' bir dil sözlüğü olmalı "
+                f"({{'tr': ..., 'en': ...}}), {type(value).__name__} geldi"
+            )
+        missing = [locale for locale in SUPPORTED_LOCALES if not value.get(locale)]
+        if missing:
+            raise ProblemDataError(
+                f"problem {problem_id!r}: '{field_name}' alanında "
+                f"{', '.join(repr(locale) for locale in missing)} dili eksik "
+                f"(mevcut: {sorted(value)})"
+            )
+
+
 def _to_problem(raw: dict) -> Problem:
+    _validate_bilingual(raw)
     return Problem(
         id=raw["id"],
         topic=raw["topic"],
