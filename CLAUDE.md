@@ -93,23 +93,56 @@ sınıflandırması (bkz. "Kapsam" bölümü).
 > Bu bölümü her oturum sonunda güncelle. Bir sonraki Claude Code oturumu
 > buradan devam noktasını anlar.
 
-- Mimari ve tüm tool spesifikasyonları netleşti (`docs/TOOLS.md`,
-  `docs/STUDENT_PROFILE_SCHEMA.md`, `docs/EXAMPLE_CHAT.md`).
-- `data/problems.json` (2 problem: `arrays_012`, `hashmap_004`) ve
-  `data/topics.json` (bağımlılık grafiği) hazır.
-- Proje iskeleti kuruldu (`pyproject.toml`, `src/domain`, `src/tools`,
-  `tests/`). Bitenler:
-  - `src/domain/mastery.py` — sabit skor tablosu (`attempt_score`), EMA
-    (`update_topic_score`, skoru tabloya karşı doğrular), seviye eşikleri
-    (`level_for_scores`).
-  - `src/domain/problem.py` — `Problem`/`ProblemTestCase` modelleri,
-    `data/problems.json` yükleyicisi, locale çözümleme.
-  - `src/tools/get_problem.py` — gizli test case / hint / referans yaklaşım
-    çıktıya sızmaz; locale boşsa `preferred_language`'e düşer.
-  - Testler: `tests/test_mastery.py`, `tests/test_get_problem.py` (28 test).
-- **Sıradaki adım**: `src/execution/` (ExecutionEngine + PythonRunner) ve
-  ardından `submit_solution` → `review_solution` (skoru `mastery.attempt_score`
-  ile alır) → `update_profile` (SQLite storage katmanı burada gerekecek).
-- Not: `get_problem` eşleşen problemler arasından ilkini seçer — "daha önce
-  çözülmüşü atla" mantığı `src/storage` geldiğinde eklenecek. Problem seti
-  hâlâ ince (arrays/hashmap easy), diğer konular için problem eklenmeli.
+**Durum tespiti (2026-09-10 oturumu, kod yazılmadı — sadece envanter).**
+
+### Biten (test edilmiş, spesifikasyona uyuyor)
+
+- `src/domain/mastery.py` — sabit skor tablosu (`attempt_score`), skor
+  doğrulama (`is_valid_score`), EMA (`update_topic_score`, tablo dışı skoru
+  reddeder), seviye eşikleri (`level_for_scores`). `docs/TOOLS.md` →
+  `review_solution` tablosu ve şemadaki formül/eşiklerle birebir uyumlu.
+- `src/domain/problem.py` — `Problem`/`ProblemTestCase` modelleri,
+  `data/problems.json` yükleyicisi (lru_cache'li), locale çözümleme
+  (`normalize_locale`), gizli test case filtresi.
+- `src/tools/get_problem.py` — `docs/TOOLS.md` → `get_problem` dönen
+  değeriyle birebir aynı alanlar. Hint / referans yaklaşım / gizli test
+  case çıktıya sızmıyor; `locale` boşsa `preferred_language`'e düşüyor.
+- Testler: `tests/test_mastery.py` + `tests/test_get_problem.py`,
+  **28 test, hepsi geçiyor** (`python3 -m pytest -q` → `28 passed`).
+- Veri: `data/problems.json` (2 problem, TR/EN + hints + reference_approach),
+  `data/topics.json` (11 konu, prerequisite grafiği) — şemadaki konu
+  listesiyle uyumlu.
+
+### Yarım / eksik
+
+- Yarım bırakılmış dosya **yok** — mevcut üç modül de kendi içinde
+  tamamlanmış durumda. Eksik olan, henüz hiç başlanmamış katmanlar.
+- Hiç başlanmamış: `src/server.py` (MCP giriş noktası, tool kaydı),
+  `src/execution/` (`engine.py` + `python_runner.py`), `src/storage/`
+  (SQLite), `src/domain` içinde `StudentProfile` ve `Attempt` modelleri.
+- `get_problem` dışındaki 8 tool'un hiçbiri kodlanmadı: `assess_level`,
+  `submit_solution`, `hint`, `review_solution`, `update_profile`,
+  `get_next_topic`, `explain_approach`, `get_reference_approach`.
+- Klasör yapısındaki `tests/test_execution.py`, `tests/test_next_topic.py`,
+  `tests/test_tools.py` henüz yok.
+
+### Bilinen sapmalar / küçük notlar
+
+- `get_problem` eşleşenler arasından ilkini seçer; "daha önce çözülmüşü
+  atla" mantığı `src/storage` gelince eklenecek (kodda not düşülü).
+- `Problem.localized`, çok dilli alanda `en` anahtarı yoksa `KeyError`
+  atar — veri doğrulaması (yükleme anında iki dilin de varlığını kontrol)
+  henüz yok.
+- Problem seti hâlâ ince: sadece `arrays`/`hashmap` ve sadece `easy`.
+  `get_next_topic` gerçekçi test edilebilmek için başka konulara da
+  problem gerekiyor.
+- `.gitignore` `__pycache__/` içermiyor; pytest sonrası dizinler
+  untracked görünüyor.
+
+### Sıradaki adım
+
+1. `src/execution/engine.py` (ExecutionEngine arayüzü) + `python_runner.py`
+   (subprocess + timeout/resource limit) ve `tests/test_execution.py`.
+2. `submit_solution` → `review_solution` (skoru `mastery.attempt_score`'tan
+   alır) → `update_profile` zinciri; `update_profile` için `src/storage`
+   (SQLite) ve `StudentProfile`/`Attempt` modelleri gerekecek.
