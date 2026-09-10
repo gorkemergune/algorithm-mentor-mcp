@@ -3,19 +3,40 @@
     "id": "arrays_012",
     "topic": "arrays",
     "difficulty": "easy",
-    "title": {"tr": "İki Sayının Toplamı", "en": "Two Sum"},
+    "title": {
+      "tr": "İki Sayının Toplamı",
+      "en": "Two Sum"
+    },
     "prompt": {
       "tr": "Bir tam sayı dizisi ve bir hedef sayı verildiğinde, toplamları hedefe eşit olan iki elemanın indekslerini döndür. Her girdinin tam olarak bir çözümü olduğunu varsayabilirsin, aynı elemanı iki kez kullanamazsın.",
       "en": "Given an array of integers and a target, return the indices of the two numbers that add up to the target. Assume exactly one solution exists, and you may not use the same element twice."
     },
     "starter_code": "def solve(nums, target):\n    pass",
     "test_cases": [
-      {"input": "[2,7,11,15], 9", "expected": "[0,1]", "hidden": false, "edge_case": false},
-      {"input": "[3,2,4], 6", "expected": "[1,2]", "hidden": false, "edge_case": false},
-      {"input": "[3,3], 6", "expected": "[0,1]", "hidden": true, "edge_case": true}
+      {
+        "input": "[2,7,11,15], 9",
+        "expected": "[0,1]",
+        "hidden": false,
+        "edge_case": false
+      },
+      {
+        "input": "[3,2,4], 6",
+        "expected": "[1,2]",
+        "hidden": false,
+        "edge_case": false
+      },
+      {
+        "input": "[3,3], 6",
+        "expected": "[0,1]",
+        "hidden": true,
+        "edge_case": true
+      }
     ],
     "reference_approach": {
-      "tags": ["hashmap", "single_pass"],
+      "tags": [
+        "hashmap",
+        "single_pass"
+      ],
       "summary": {
         "tr": "Tek geçişte hashmap'te tamamlayıcıyı ara.",
         "en": "Single pass, look up the complement in a hashmap."
@@ -38,19 +59,40 @@
     "id": "hashmap_004",
     "topic": "hashmap",
     "difficulty": "easy",
-    "title": {"tr": "Geçerli Anagram", "en": "Valid Anagram"},
+    "title": {
+      "tr": "Geçerli Anagram",
+      "en": "Valid Anagram"
+    },
     "prompt": {
       "tr": "İki string verildiğinde, ikincisinin birincisinin bir anagramı olup olmadığını döndür.",
       "en": "Given two strings, return whether the second is an anagram of the first."
     },
     "starter_code": "def solve(s, t):\n    pass",
     "test_cases": [
-      {"input": "\"anagram\", \"nagaram\"", "expected": "true", "hidden": false, "edge_case": false},
-      {"input": "\"rat\", \"car\"", "expected": "false", "hidden": false, "edge_case": false},
-      {"input": "\"a\", \"ab\"", "expected": "false", "hidden": true, "edge_case": true}
+      {
+        "input": "\"anagram\", \"nagaram\"",
+        "expected": "true",
+        "hidden": false,
+        "edge_case": false
+      },
+      {
+        "input": "\"rat\", \"car\"",
+        "expected": "false",
+        "hidden": false,
+        "edge_case": false
+      },
+      {
+        "input": "\"a\", \"ab\"",
+        "expected": "false",
+        "hidden": true,
+        "edge_case": true
+      }
     ],
     "reference_approach": {
-      "tags": ["hashmap", "frequency_count"],
+      "tags": [
+        "hashmap",
+        "frequency_count"
+      ],
       "summary": {
         "tr": "Her iki string için karakter frekans sayımı yap, karşılaştır.",
         "en": "Count character frequencies for both strings and compare."
@@ -66,6 +108,1131 @@
         "If the lengths differ, it can't be an anagram — check that first.",
         "Think of a data structure that lets you count how many times each character appears.",
         "Build a counter from one string, then decrement while processing the other; everything should end at 0."
+      ]
+    }
+  },
+  {
+    "id": "arrays_045",
+    "topic": "arrays",
+    "difficulty": "medium",
+    "title": {
+      "tr": "Maksimum Alt Dizi",
+      "en": "Maximum Subarray"
+    },
+    "prompt": {
+      "tr": "Bir tam sayı dizisi verildiğinde, toplamı en büyük olan bitişik (contiguous) alt dizinin toplamını döndür.",
+      "en": "Given an integer array, return the sum of the contiguous subarray with the largest sum."
+    },
+    "starter_code": "def solve(nums):\n    pass",
+    "test_cases": [
+      {
+        "input": "[-2, 1, -3, 4, -1, 2, 1, -5, 4]",
+        "expected": "6",
+        "hidden": false,
+        "edge_case": false
+      },
+      {
+        "input": "[1]",
+        "expected": "1",
+        "hidden": false,
+        "edge_case": false
+      },
+      {
+        "input": "[-1, -2, -3]",
+        "expected": "-1",
+        "hidden": true,
+        "edge_case": true
+      }
+    ],
+    "reference_approach": {
+      "tags": [
+        "kadane",
+        "running_sum"
+      ],
+      "summary": {
+        "tr": "Kadane algoritmasıyla o ana kadarki en iyi toplamı takip et.",
+        "en": "Track the best running sum so far using Kadane's algorithm."
+      }
+    },
+    "hints": {
+      "tr": [
+        "Negatif bir toplamı taşımak hiç mantıklı mı?",
+        "Her elemanda ya mevcut toplamı devam ettir ya da sıfırdan başla.",
+        "current_sum = max(nums[i], current_sum + nums[i]); best = max(best, current_sum)."
+      ],
+      "en": [
+        "Does it ever make sense to carry a negative running sum?",
+        "At each element, either extend the current sum or start fresh.",
+        "current_sum = max(nums[i], current_sum + nums[i]); best = max(best, current_sum)."
+      ]
+    }
+  },
+  {
+    "id": "hashmap_051",
+    "topic": "hashmap",
+    "difficulty": "medium",
+    "title": {
+      "tr": "Toplamı K Olan Alt Diziler",
+      "en": "Subarray Sum Equals K"
+    },
+    "prompt": {
+      "tr": "Bir tam sayı dizisi ve bir hedef k verildiğinde, toplamı k'ya eşit olan bitişik alt dizilerin sayısını döndür.",
+      "en": "Given an integer array and a target k, return the number of contiguous subarrays whose sum equals k."
+    },
+    "starter_code": "def solve(nums, k):\n    pass",
+    "test_cases": [
+      {
+        "input": "[1, 1, 1], 2",
+        "expected": "2",
+        "hidden": false,
+        "edge_case": false
+      },
+      {
+        "input": "[1, 2, 3], 3",
+        "expected": "2",
+        "hidden": false,
+        "edge_case": false
+      },
+      {
+        "input": "[1], 0",
+        "expected": "0",
+        "hidden": true,
+        "edge_case": true
+      }
+    ],
+    "reference_approach": {
+      "tags": [
+        "hashmap",
+        "prefix_sum"
+      ],
+      "summary": {
+        "tr": "Prefix toplamları hashmap'te say, her noktada prefix-k'nın kaç kez göründüğüne bak.",
+        "en": "Count prefix sums in a hashmap; at each point check how many times prefix-k has occurred."
+      }
+    },
+    "hints": {
+      "tr": [
+        "Alt dizi toplamını iki prefix toplamının farkı olarak düşünebilir misin?",
+        "Şimdiye kadarki her prefix toplamının kaç kez göründüğünü bir hashmap'te tut.",
+        "Her elemanda prefix_sum'u güncelle, count += freq[prefix_sum - k], sonra freq[prefix_sum]'ı artır."
+      ],
+      "en": [
+        "Can you think of a subarray sum as the difference of two prefix sums?",
+        "Keep a hashmap of how many times each prefix sum has occurred so far.",
+        "At each element, update prefix_sum, count += freq[prefix_sum - k], then increment freq[prefix_sum]."
+      ]
+    }
+  },
+  {
+    "id": "strings_010",
+    "topic": "strings",
+    "difficulty": "easy",
+    "title": {
+      "tr": "Geçerli Palindrom",
+      "en": "Valid Palindrome"
+    },
+    "prompt": {
+      "tr": "Bir string verildiğinde, yalnızca alfanümerik karakterleri dikkate alıp büyük/küçük harf duyarsız şekilde palindrom olup olmadığını döndür.",
+      "en": "Given a string, considering only alphanumeric characters and ignoring case, return whether it is a palindrome."
+    },
+    "starter_code": "def solve(s):\n    pass",
+    "test_cases": [
+      {
+        "input": "\"A man, a plan, a canal: Panama\"",
+        "expected": "true",
+        "hidden": false,
+        "edge_case": false
+      },
+      {
+        "input": "\"race a car\"",
+        "expected": "false",
+        "hidden": false,
+        "edge_case": false
+      },
+      {
+        "input": "\"\"",
+        "expected": "true",
+        "hidden": true,
+        "edge_case": true
+      }
+    ],
+    "reference_approach": {
+      "tags": [
+        "two_pointer",
+        "string"
+      ],
+      "summary": {
+        "tr": "Sadece alfanümerik karakterleri küçük harfe çevirip iki uçtan karşılaştır.",
+        "en": "Filter to alphanumeric characters, lowercase them, compare from both ends."
+      }
+    },
+    "hints": {
+      "tr": [
+        "Boşluk ve noktalama işaretlerini yok saymalısın.",
+        "İki işaretçiyle baştan ve sondan ilerlemek işe yarayabilir.",
+        "Sol ve sağ işaretçiler alfanümerik olmayan karakterleri atlasın, karşılaştırdıkları karakterler eşit değilse false dön."
+      ],
+      "en": [
+        "You need to ignore spaces and punctuation.",
+        "Two pointers moving from both ends can work well here.",
+        "Skip non-alphanumeric characters with both pointers; if the compared characters differ, return false."
+      ]
+    }
+  },
+  {
+    "id": "strings_022",
+    "topic": "strings",
+    "difficulty": "medium",
+    "title": {
+      "tr": "En Uzun Ortak Önek",
+      "en": "Longest Common Prefix"
+    },
+    "prompt": {
+      "tr": "Bir string dizisi verildiğinde, hepsinin ortak önekini bul. Ortak önek yoksa boş string döndür.",
+      "en": "Given an array of strings, find the longest common prefix among them. Return an empty string if there is none."
+    },
+    "starter_code": "def solve(strs):\n    pass",
+    "test_cases": [
+      {
+        "input": "[\"flower\", \"flow\", \"flight\"]",
+        "expected": "\"fl\"",
+        "hidden": false,
+        "edge_case": false
+      },
+      {
+        "input": "[\"dog\", \"racecar\", \"car\"]",
+        "expected": "\"\"",
+        "hidden": false,
+        "edge_case": false
+      },
+      {
+        "input": "[]",
+        "expected": "\"\"",
+        "hidden": true,
+        "edge_case": true
+      }
+    ],
+    "reference_approach": {
+      "tags": [
+        "strings",
+        "prefix"
+      ],
+      "summary": {
+        "tr": "İlk stringi referans al, her karakterde diğer tüm stringlerle karşılaştır.",
+        "en": "Use the first string as reference, compare each character against all other strings."
+      }
+    },
+    "hints": {
+      "tr": [
+        "Boş liste özel bir durum, önce onu kontrol et.",
+        "İlk stringin karakterlerini sırayla diğer stringlerle karşılaştırabilirsin.",
+        "Herhangi bir stringde karakter uyuşmazsa ya da string bitmişse, o ana kadarki prefix'i döndür."
+      ],
+      "en": [
+        "An empty list is a special case, check it first.",
+        "You can compare the first string's characters against the others one by one.",
+        "As soon as a character mismatches or a string runs out, return the prefix built so far."
+      ]
+    }
+  },
+  {
+    "id": "two_pointers_015",
+    "topic": "two_pointers",
+    "difficulty": "easy",
+    "title": {
+      "tr": "İki Sayının Toplamı II - Sıralı Dizi",
+      "en": "Two Sum II - Input Array Is Sorted"
+    },
+    "prompt": {
+      "tr": "Artan sırada sıralı bir tam sayı dizisi ve bir hedef verildiğinde, toplamları hedefe eşit olan iki elemanın 1-indeksli konumlarını döndür.",
+      "en": "Given a 1-indexed array sorted in ascending order and a target, return the 1-indexed positions of the two numbers that add up to the target."
+    },
+    "starter_code": "def solve(numbers, target):\n    pass",
+    "test_cases": [
+      {
+        "input": "[2, 7, 11, 15], 9",
+        "expected": "[1, 2]",
+        "hidden": false,
+        "edge_case": false
+      },
+      {
+        "input": "[2, 3, 4], 6",
+        "expected": "[1, 3]",
+        "hidden": false,
+        "edge_case": false
+      },
+      {
+        "input": "[-1, 0], -1",
+        "expected": "[1, 2]",
+        "hidden": true,
+        "edge_case": true
+      }
+    ],
+    "reference_approach": {
+      "tags": [
+        "two_pointer"
+      ],
+      "summary": {
+        "tr": "Dizi sıralı, sol ve sağ işaretçiyle toplamı hedefe göre ayarla.",
+        "en": "The array is sorted; move left/right pointers based on how the sum compares to the target."
+      }
+    },
+    "hints": {
+      "tr": [
+        "Dizi zaten sıralı, bu bilgiyi kullanan bir yaklaşım var mı?",
+        "Biri baştan biri sondan başlayan iki işaretçi düşün.",
+        "Toplam hedeften büyükse sağ işaretçiyi geri çek, küçükse sol işaretçiyi ileri al."
+      ],
+      "en": [
+        "The array is already sorted — is there an approach that uses that?",
+        "Think of two pointers, one starting from each end.",
+        "If the sum is greater than target, move the right pointer left; if smaller, move the left pointer right."
+      ]
+    }
+  },
+  {
+    "id": "two_pointers_027",
+    "topic": "two_pointers",
+    "difficulty": "medium",
+    "title": {
+      "tr": "En Çok Su Tutan Kap",
+      "en": "Container With Most Water"
+    },
+    "prompt": {
+      "tr": "Yükseklikleri temsil eden bir tam sayı dizisi verildiğinde, iki çizgi ve x ekseninin oluşturduğu en büyük su alanını döndür.",
+      "en": "Given an array representing heights, return the maximum area of water that two lines and the x-axis can contain."
+    },
+    "starter_code": "def solve(heights):\n    pass",
+    "test_cases": [
+      {
+        "input": "[1, 8, 6, 2, 5, 4, 8, 3, 7]",
+        "expected": "49",
+        "hidden": false,
+        "edge_case": false
+      },
+      {
+        "input": "[1, 1]",
+        "expected": "1",
+        "hidden": false,
+        "edge_case": false
+      },
+      {
+        "input": "[1, 2, 1]",
+        "expected": "2",
+        "hidden": true,
+        "edge_case": true
+      }
+    ],
+    "reference_approach": {
+      "tags": [
+        "two_pointer",
+        "greedy"
+      ],
+      "summary": {
+        "tr": "İki uçtan başla, daha kısa duvarı içeri taşı; alan = min(yükseklik)*genişlik.",
+        "en": "Start from both ends, move the shorter wall inward; area = min(height) * width."
+      }
+    },
+    "hints": {
+      "tr": [
+        "Alan, iki çizginin daha kısa olanına ve aralarındaki mesafeye bağlı.",
+        "Her adımda iki işaretçiden hangisini hareket ettirmek daha mantıklı?",
+        "Kısa olan duvarı içeri taşı, çünkü uzun duvarı tutmak potansiyeli korur."
+      ],
+      "en": [
+        "Area depends on the shorter of the two lines and the distance between them.",
+        "At each step, which of the two pointers makes more sense to move?",
+        "Move the shorter wall inward, since keeping the taller wall preserves potential."
+      ]
+    }
+  },
+  {
+    "id": "sliding_window_008",
+    "topic": "sliding_window",
+    "difficulty": "easy",
+    "title": {
+      "tr": "Hisse Alım Satımı İçin En İyi Zaman",
+      "en": "Best Time to Buy and Sell Stock"
+    },
+    "prompt": {
+      "tr": "Günlük hisse fiyatlarını temsil eden bir dizi verildiğinde, bir kez alıp bir kez satarak elde edilebilecek maksimum kârı döndür. Kâr mümkün değilse 0 döndür.",
+      "en": "Given an array of daily stock prices, return the maximum profit from buying once and selling once. Return 0 if no profit is possible."
+    },
+    "starter_code": "def solve(prices):\n    pass",
+    "test_cases": [
+      {
+        "input": "[7, 1, 5, 3, 6, 4]",
+        "expected": "5",
+        "hidden": false,
+        "edge_case": false
+      },
+      {
+        "input": "[7, 6, 4, 3, 1]",
+        "expected": "0",
+        "hidden": false,
+        "edge_case": false
+      },
+      {
+        "input": "[]",
+        "expected": "0",
+        "hidden": true,
+        "edge_case": true
+      }
+    ],
+    "reference_approach": {
+      "tags": [
+        "sliding_window",
+        "greedy"
+      ],
+      "summary": {
+        "tr": "O ana kadarki en düşük fiyatı takip et, her günde olası kârı güncelle.",
+        "en": "Track the lowest price seen so far, update the possible profit at each day."
+      }
+    },
+    "hints": {
+      "tr": [
+        "Boş liste özel bir durum.",
+        "Her gün için, o güne kadarki en düşük fiyatı bilmen yeterli mi?",
+        "min_price'ı güncelle, best = max(best, price - min_price)."
+      ],
+      "en": [
+        "An empty list is a special case.",
+        "For each day, is knowing the lowest price up to that day enough?",
+        "Update min_price, best = max(best, price - min_price)."
+      ]
+    }
+  },
+  {
+    "id": "sliding_window_019",
+    "topic": "sliding_window",
+    "difficulty": "medium",
+    "title": {
+      "tr": "Tekrar Eden Karakter Olmayan En Uzun Alt String",
+      "en": "Longest Substring Without Repeating Characters"
+    },
+    "prompt": {
+      "tr": "Bir string verildiğinde, tekrar eden karakter içermeyen en uzun alt stringin uzunluğunu döndür.",
+      "en": "Given a string, return the length of the longest substring without repeating characters."
+    },
+    "starter_code": "def solve(s):\n    pass",
+    "test_cases": [
+      {
+        "input": "\"abcabcbb\"",
+        "expected": "3",
+        "hidden": false,
+        "edge_case": false
+      },
+      {
+        "input": "\"bbbbb\"",
+        "expected": "1",
+        "hidden": false,
+        "edge_case": false
+      },
+      {
+        "input": "\"\"",
+        "expected": "0",
+        "hidden": true,
+        "edge_case": true
+      }
+    ],
+    "reference_approach": {
+      "tags": [
+        "sliding_window",
+        "hashset"
+      ],
+      "summary": {
+        "tr": "Kayan pencere ile tekrar eden karakteri gördüğünde pencerenin solunu ilerlet.",
+        "en": "Use a sliding window; when you see a repeat, advance the window's left edge."
+      }
+    },
+    "hints": {
+      "tr": [
+        "Bir pencere içindeki karakterleri takip eden bir veri yapısı düşün.",
+        "Tekrar eden bir karakterle karşılaşınca pencerenin sol ucunu ne zaman ilerletmelisin?",
+        "Sol ucu, tekrar eden karakterin bir önceki konumunun hemen sonrasına kadar ilerlet."
+      ],
+      "en": [
+        "Think of a data structure that tracks the characters currently in your window.",
+        "When you hit a repeated character, when should you advance the window's left edge?",
+        "Advance the left edge to just past the previous occurrence of the repeated character."
+      ]
+    }
+  },
+  {
+    "id": "binary_search_005",
+    "topic": "binary_search",
+    "difficulty": "easy",
+    "title": {
+      "tr": "İkili Arama",
+      "en": "Binary Search"
+    },
+    "prompt": {
+      "tr": "Artan sırada sıralı bir tam sayı dizisi ve bir hedef verildiğinde, hedefin indeksini döndür; yoksa -1 döndür.",
+      "en": "Given an integer array sorted in ascending order and a target, return the index of target; return -1 if not found."
+    },
+    "starter_code": "def solve(nums, target):\n    pass",
+    "test_cases": [
+      {
+        "input": "[-1, 0, 3, 5, 9, 12], 9",
+        "expected": "4",
+        "hidden": false,
+        "edge_case": false
+      },
+      {
+        "input": "[-1, 0, 3, 5, 9, 12], 2",
+        "expected": "-1",
+        "hidden": false,
+        "edge_case": false
+      },
+      {
+        "input": "[], 5",
+        "expected": "-1",
+        "hidden": true,
+        "edge_case": true
+      }
+    ],
+    "reference_approach": {
+      "tags": [
+        "binary_search"
+      ],
+      "summary": {
+        "tr": "Ortadaki elemanla karşılaştır, arama aralığını yarıya indir.",
+        "en": "Compare with the middle element, halve the search range."
+      }
+    },
+    "hints": {
+      "tr": [
+        "Dizi sıralı, doğrusal aramadan daha hızlı bir yol var mı?",
+        "Sol ve sağ sınırlarla bir orta nokta hesapla.",
+        "nums[mid] hedeften büyükse sağı, küçükse solu daralt."
+      ],
+      "en": [
+        "The array is sorted — is there a faster way than a linear scan?",
+        "Compute a midpoint using left and right boundaries.",
+        "If nums[mid] is greater than target, shrink the right side; if smaller, shrink the left."
+      ]
+    }
+  },
+  {
+    "id": "binary_search_031",
+    "topic": "binary_search",
+    "difficulty": "medium",
+    "title": {
+      "tr": "Döndürülmüş Sıralı Dizide Arama",
+      "en": "Search in Rotated Sorted Array"
+    },
+    "prompt": {
+      "tr": "Başlangıçta artan sırada sıralı olan ama bilinmeyen bir noktada döndürülmüş bir dizi ve bir hedef verildiğinde, hedefin indeksini döndür; yoksa -1 döndür.",
+      "en": "Given an array that was originally sorted ascending but rotated at an unknown pivot, and a target, return the index of target; return -1 if not found."
+    },
+    "starter_code": "def solve(nums, target):\n    pass",
+    "test_cases": [
+      {
+        "input": "[4, 5, 6, 7, 0, 1, 2], 0",
+        "expected": "4",
+        "hidden": false,
+        "edge_case": false
+      },
+      {
+        "input": "[4, 5, 6, 7, 0, 1, 2], 3",
+        "expected": "-1",
+        "hidden": false,
+        "edge_case": false
+      },
+      {
+        "input": "[1], 0",
+        "expected": "-1",
+        "hidden": true,
+        "edge_case": true
+      }
+    ],
+    "reference_approach": {
+      "tags": [
+        "binary_search",
+        "rotated_array"
+      ],
+      "summary": {
+        "tr": "Her adımda hangi yarının sıralı olduğunu belirle, hedefin o yarıda olup olmadığına bak.",
+        "en": "At each step, determine which half is sorted, then check if the target lies within it."
+      }
+    },
+    "hints": {
+      "tr": [
+        "Dizi tam sıralı değil ama bir yarısı her zaman sıralı.",
+        "Orta noktada hangi yarının sıralı olduğunu nasıl anlarsın?",
+        "Sıralı yarıda hedef varsa oraya gir, yoksa diğer yarıya geç."
+      ],
+      "en": [
+        "The array isn't fully sorted, but one half is always sorted.",
+        "How can you tell which half is sorted at the midpoint?",
+        "If the target lies within the sorted half, search there; otherwise search the other half."
+      ]
+    }
+  },
+  {
+    "id": "trees_002",
+    "topic": "trees",
+    "difficulty": "easy",
+    "title": {
+      "tr": "İkili Ağacın Maksimum Derinliği",
+      "en": "Maximum Depth of Binary Tree"
+    },
+    "prompt": {
+      "tr": "Bir ikili ağacın kökten en uzak yaprağa olan maksimum derinliğini döndür. Ağaç, [değer, sol, sağ] iç içe liste formatında verilir; eksik düğüm null ile gösterilir.",
+      "en": "Return the maximum depth of a binary tree, from the root to the farthest leaf. The tree is given as a nested [value, left, right] list; a missing node is null."
+    },
+    "starter_code": "def solve(tree):\n    pass",
+    "test_cases": [
+      {
+        "input": "[3, [9, null, null], [20, [15, null, null], [7, null, null]]]",
+        "expected": "3",
+        "hidden": false,
+        "edge_case": false
+      },
+      {
+        "input": "null",
+        "expected": "0",
+        "hidden": false,
+        "edge_case": true
+      },
+      {
+        "input": "[1, null, null]",
+        "expected": "1",
+        "hidden": true,
+        "edge_case": false
+      }
+    ],
+    "reference_approach": {
+      "tags": [
+        "tree",
+        "dfs",
+        "recursion"
+      ],
+      "summary": {
+        "tr": "Kökten başlayıp sol ve sağ alt ağaçların derinliğinin büyüğünü al, 1 ekle.",
+        "en": "Recurse from the root, take the greater of the left/right subtree depths, add 1."
+      }
+    },
+    "hints": {
+      "tr": [
+        "Boş bir ağacın derinliği kaçtır?",
+        "Bir düğümün derinliği, alt ağaçlarının derinliklerine bağlı.",
+        "depth(node) = 1 + max(depth(left), depth(right)), node None ise 0 dön."
+      ],
+      "en": [
+        "What's the depth of an empty tree?",
+        "A node's depth depends on the depths of its subtrees.",
+        "depth(node) = 1 + max(depth(left), depth(right)); return 0 if node is None."
+      ]
+    }
+  },
+  {
+    "id": "trees_014",
+    "topic": "trees",
+    "difficulty": "medium",
+    "title": {
+      "tr": "İkili Arama Ağacını Doğrula",
+      "en": "Validate Binary Search Tree"
+    },
+    "prompt": {
+      "tr": "Bir ikili ağacın geçerli bir ikili arama ağacı (BST) olup olmadığını döndür. Ağaç, [değer, sol, sağ] iç içe liste formatında verilir; eksik düğüm null ile gösterilir.",
+      "en": "Return whether a binary tree is a valid binary search tree (BST). The tree is given as a nested [value, left, right] list; a missing node is null."
+    },
+    "starter_code": "def solve(tree):\n    pass",
+    "test_cases": [
+      {
+        "input": "[2, [1, null, null], [3, null, null]]",
+        "expected": "true",
+        "hidden": false,
+        "edge_case": false
+      },
+      {
+        "input": "[5, [1, null, null], [4, [3, null, null], [6, null, null]]]",
+        "expected": "false",
+        "hidden": false,
+        "edge_case": false
+      },
+      {
+        "input": "null",
+        "expected": "true",
+        "hidden": true,
+        "edge_case": true
+      }
+    ],
+    "reference_approach": {
+      "tags": [
+        "tree",
+        "dfs",
+        "bst"
+      ],
+      "summary": {
+        "tr": "Her düğüm için izin verilen (min, max) aralığını takip ederek DFS yap.",
+        "en": "DFS while tracking the allowed (min, max) range for each node."
+      }
+    },
+    "hints": {
+      "tr": [
+        "Sadece bir düğümün doğrudan çocuklarıyla karşılaştırmak yeterli mi?",
+        "Her düğüm için geçerli bir değer aralığı taşımayı dene.",
+        "Sol alt ağaca giderken üst sınırı düğümün değeriyle güncelle, sağda alt sınırı güncelle."
+      ],
+      "en": [
+        "Is comparing a node only with its direct children enough?",
+        "Try carrying a valid value range down for each node.",
+        "Going left, tighten the upper bound to the node's value; going right, tighten the lower bound."
+      ]
+    }
+  },
+  {
+    "id": "dfs_006",
+    "topic": "dfs",
+    "difficulty": "easy",
+    "title": {
+      "tr": "Ada Sayısı",
+      "en": "Number of Islands"
+    },
+    "prompt": {
+      "tr": "0 (su) ve 1 (kara) hücrelerinden oluşan bir ızgara verildiğinde, ada sayısını döndür. Bir ada, yatay/dikey bitişik 1'lerden oluşur.",
+      "en": "Given a grid of 0s (water) and 1s (land), return the number of islands. An island is formed by horizontally/vertically connected 1s."
+    },
+    "starter_code": "def solve(grid):\n    pass",
+    "test_cases": [
+      {
+        "input": "[[1, 1, 0, 0], [1, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]",
+        "expected": "3",
+        "hidden": false,
+        "edge_case": false
+      },
+      {
+        "input": "[[0, 0], [0, 0]]",
+        "expected": "0",
+        "hidden": false,
+        "edge_case": false
+      },
+      {
+        "input": "[[1]]",
+        "expected": "1",
+        "hidden": true,
+        "edge_case": true
+      }
+    ],
+    "reference_approach": {
+      "tags": [
+        "dfs",
+        "grid",
+        "flood_fill"
+      ],
+      "summary": {
+        "tr": "Her ziyaret edilmemiş karayı bul, DFS ile bitişik tüm karaları işaretle, sayaç artır.",
+        "en": "Find each unvisited land cell, flood-fill connected land with DFS, increment the counter."
+      }
+    },
+    "hints": {
+      "tr": [
+        "Bitişik 1'ler tek bir adayı oluşturur.",
+        "Bir 1 bulduğunda onunla bağlı tüm 1'leri nasıl 'ziyaret edildi' işaretlersin?",
+        "DFS/flood-fill ile bulunan 1'i 0'a çevir (ya da ziyaret setine ekle), dört komşuya da aynısını uygula."
+      ],
+      "en": [
+        "Connected 1s form a single island.",
+        "When you find a 1, how do you mark all connected 1s as visited?",
+        "Flood-fill: turn the found 1 into a 0 (or add to a visited set), and recurse into all four neighbors."
+      ]
+    }
+  },
+  {
+    "id": "dfs_020",
+    "topic": "dfs",
+    "difficulty": "medium",
+    "title": {
+      "tr": "Yol Toplamı",
+      "en": "Path Sum"
+    },
+    "prompt": {
+      "tr": "Bir ikili ağaç ve bir hedef toplam verildiğinde, kökten bir yaprağa giden ve değerleri toplamı hedefe eşit olan bir yol olup olmadığını döndür. Ağaç, [değer, sol, sağ] iç içe liste formatında verilir; eksik düğüm null ile gösterilir.",
+      "en": "Given a binary tree and a target sum, return whether there is a root-to-leaf path whose values add up to the target. The tree is given as a nested [value, left, right] list; a missing node is null."
+    },
+    "starter_code": "def solve(tree, target_sum):\n    pass",
+    "test_cases": [
+      {
+        "input": "[5, [4, [11, [7, null, null], [2, null, null]], null], [8, [13, null, null], [4, null, [1, null, null]]]], 22",
+        "expected": "true",
+        "hidden": false,
+        "edge_case": false
+      },
+      {
+        "input": "[1, [2, null, null], null], 5",
+        "expected": "false",
+        "hidden": false,
+        "edge_case": false
+      },
+      {
+        "input": "null, 0",
+        "expected": "false",
+        "hidden": true,
+        "edge_case": true
+      }
+    ],
+    "reference_approach": {
+      "tags": [
+        "dfs",
+        "tree",
+        "recursion"
+      ],
+      "summary": {
+        "tr": "Kökten yaprağa DFS yaparken kalan hedefi çıkar, yaprakta kalan hedef sıfır mı diye bak.",
+        "en": "DFS from root to leaf, subtracting from the remaining target, check if it's zero at a leaf."
+      }
+    },
+    "hints": {
+      "tr": [
+        "Boş bir ağaçta hiçbir yol yoktur.",
+        "Bir yaprağa ulaştığında, o ana kadar toplanan değerlerin hedefe eşit olup olmadığını kontrol et.",
+        "Her düğümde target_sum - node.value'yu alt ağaçlara taşı, yaprakta target_sum == node.value mi bak."
+      ],
+      "en": [
+        "An empty tree has no paths at all.",
+        "When you reach a leaf, check whether the values accumulated so far equal the target.",
+        "At each node, pass target_sum - node.value down to the subtrees; at a leaf, check target_sum == node.value."
+      ]
+    }
+  },
+  {
+    "id": "bfs_009",
+    "topic": "bfs",
+    "difficulty": "easy",
+    "title": {
+      "tr": "İkili Ağacın Minimum Derinliği",
+      "en": "Minimum Depth of Binary Tree"
+    },
+    "prompt": {
+      "tr": "Bir ikili ağacın kökten en yakın yaprağa olan minimum derinliğini döndür. Ağaç, [değer, sol, sağ] iç içe liste formatında verilir; eksik düğüm null ile gösterilir.",
+      "en": "Return the minimum depth of a binary tree, from the root to the nearest leaf. The tree is given as a nested [value, left, right] list; a missing node is null."
+    },
+    "starter_code": "def solve(tree):\n    pass",
+    "test_cases": [
+      {
+        "input": "[3, [9, null, null], [20, [15, null, null], [7, null, null]]]",
+        "expected": "2",
+        "hidden": false,
+        "edge_case": false
+      },
+      {
+        "input": "[2, null, [3, null, [4, null, [5, null, [6, null, null]]]]]",
+        "expected": "5",
+        "hidden": false,
+        "edge_case": false
+      },
+      {
+        "input": "null",
+        "expected": "0",
+        "hidden": true,
+        "edge_case": true
+      }
+    ],
+    "reference_approach": {
+      "tags": [
+        "bfs",
+        "tree"
+      ],
+      "summary": {
+        "tr": "BFS ile katman katman ilerle, ilk yaprağa ulaştığın katman minimum derinliktir.",
+        "en": "BFS level by level; the level at which you first reach a leaf is the minimum depth."
+      }
+    },
+    "hints": {
+      "tr": [
+        "Neden DFS yerine BFS daha uygun olabilir?",
+        "BFS'te ilk bulduğun yaprak, en sığ yapraktır.",
+        "Kuyruğa (düğüm, derinlik) çiftleri koy, yaprağa (iki çocuğu da yok) ulaştığında o derinliği döndür."
+      ],
+      "en": [
+        "Why might BFS be more suitable here than DFS?",
+        "In BFS, the first leaf you find is the shallowest one.",
+        "Enqueue (node, depth) pairs; when you reach a leaf (no children), return that depth."
+      ]
+    }
+  },
+  {
+    "id": "bfs_024",
+    "topic": "bfs",
+    "difficulty": "medium",
+    "title": {
+      "tr": "İkili Matriste En Kısa Yol",
+      "en": "Shortest Path in Binary Matrix"
+    },
+    "prompt": {
+      "tr": "0 (açık) ve 1 (engel) hücrelerinden oluşan bir ızgarada, sol üstten sağ alta 8 yönlü hareketle en kısa yolun uzunluğunu döndür; yol yoksa -1 döndür.",
+      "en": "Given a grid of 0s (open) and 1s (blocked), return the length of the shortest 8-directional path from top-left to bottom-right; return -1 if no path exists."
+    },
+    "starter_code": "def solve(grid):\n    pass",
+    "test_cases": [
+      {
+        "input": "[[0, 1], [1, 0]]",
+        "expected": "2",
+        "hidden": false,
+        "edge_case": false
+      },
+      {
+        "input": "[[0, 0, 0], [1, 1, 0], [1, 1, 0]]",
+        "expected": "4",
+        "hidden": false,
+        "edge_case": false
+      },
+      {
+        "input": "[[1, 0], [0, 0]]",
+        "expected": "-1",
+        "hidden": true,
+        "edge_case": true
+      }
+    ],
+    "reference_approach": {
+      "tags": [
+        "bfs",
+        "grid",
+        "shortest_path"
+      ],
+      "summary": {
+        "tr": "8 yönlü BFS ile en kısa yolu bul, ziyaret edilen hücreleri işaretle.",
+        "en": "BFS in 8 directions to find the shortest path, marking visited cells."
+      }
+    },
+    "hints": {
+      "tr": [
+        "Ağırlıksız bir grafikte en kısa yol için hangi algoritma uygun?",
+        "Başlangıç ya da bitiş hücresi engelliyse yol yoktur.",
+        "BFS kuyruğuna (satır, sütun, mesafe) ekle, 8 komşuyu da dene, ziyaret edilenleri işaretle."
+      ],
+      "en": [
+        "Which algorithm suits shortest path in an unweighted graph?",
+        "If the start or end cell is blocked, there's no path.",
+        "Enqueue (row, col, distance), try all 8 neighbors, mark visited cells."
+      ]
+    }
+  },
+  {
+    "id": "graphs_001",
+    "topic": "graphs",
+    "difficulty": "easy",
+    "title": {
+      "tr": "Grafikte Yol Var Mı",
+      "en": "Find if Path Exists in Graph"
+    },
+    "prompt": {
+      "tr": "n düğümlü ve kenar listesi verilen yönsüz bir grafikte, source'tan destination'a bir yol olup olmadığını döndür.",
+      "en": "Given an undirected graph with n nodes and an edge list, return whether there is a path from source to destination."
+    },
+    "starter_code": "def solve(n, edges, source, destination):\n    pass",
+    "test_cases": [
+      {
+        "input": "3, [[0, 1], [1, 2], [2, 0]], 0, 2",
+        "expected": "true",
+        "hidden": false,
+        "edge_case": false
+      },
+      {
+        "input": "6, [[0, 1], [0, 2], [3, 5], [5, 4], [4, 3]], 0, 5",
+        "expected": "false",
+        "hidden": false,
+        "edge_case": false
+      },
+      {
+        "input": "1, [], 0, 0",
+        "expected": "true",
+        "hidden": true,
+        "edge_case": true
+      }
+    ],
+    "reference_approach": {
+      "tags": [
+        "graph",
+        "bfs_or_dfs",
+        "connectivity"
+      ],
+      "summary": {
+        "tr": "Kenar listesinden komşuluk listesi kur, source'tan BFS/DFS ile destination'a ulaşılabiliyor mu diye bak.",
+        "en": "Build an adjacency list from the edges, then BFS/DFS from source to check reachability to destination."
+      }
+    },
+    "hints": {
+      "tr": [
+        "source ile destination aynıysa özel bir durum var mı?",
+        "Önce kenar listesinden bir komşuluk listesi oluşturman işini kolaylaştırır.",
+        "source'tan başlayan bir BFS/DFS ile ziyaret edilen düğümler kümesine destination'ın olup olmadığına bak."
+      ],
+      "en": [
+        "Is there a special case when source equals destination?",
+        "Building an adjacency list from the edges first will make this easier.",
+        "Run BFS/DFS from source and check whether destination is in the set of visited nodes."
+      ]
+    }
+  },
+  {
+    "id": "graphs_003",
+    "topic": "graphs",
+    "difficulty": "medium",
+    "title": {
+      "tr": "Bağlı Bileşenler",
+      "en": "Connected Components"
+    },
+    "prompt": {
+      "tr": "n düğümlü ve kenar listesi verilen yönsüz bir grafikte, bağlı bileşen sayısını döndür.",
+      "en": "Given an undirected graph with n nodes and an edge list, return the number of connected components."
+    },
+    "starter_code": "def solve(n, edges):\n    pass",
+    "test_cases": [
+      {
+        "input": "5, [[0, 1], [1, 2], [3, 4]]",
+        "expected": "2",
+        "hidden": false,
+        "edge_case": false
+      },
+      {
+        "input": "4, []",
+        "expected": "4",
+        "hidden": false,
+        "edge_case": false
+      },
+      {
+        "input": "1, []",
+        "expected": "1",
+        "hidden": true,
+        "edge_case": true
+      }
+    ],
+    "reference_approach": {
+      "tags": [
+        "graph",
+        "bfs_or_dfs",
+        "connectivity"
+      ],
+      "summary": {
+        "tr": "Komşuluk listesi kur, ziyaret edilmemiş her düğümden BFS/DFS başlat, sayaç artır.",
+        "en": "Build an adjacency list, start a BFS/DFS from each unvisited node, increment the counter."
+      }
+    },
+    "hints": {
+      "tr": [
+        "Bağlı bileşen sayısı, kaç kere yeni bir BFS/DFS başlatman gerektiğiyle aynı.",
+        "Ziyaret edilen düğümleri takip eden bir küme tut.",
+        "0'dan n-1'e kadar her düğümde, ziyaret edilmemişse BFS/DFS başlat ve bağlı olduğu her düğümü işaretle, sayaç += 1."
+      ],
+      "en": [
+        "The number of connected components equals how many times you need to start a fresh BFS/DFS.",
+        "Keep a set tracking which nodes have been visited.",
+        "For each node 0 to n-1, if unvisited, start BFS/DFS, mark everything reachable, counter += 1."
+      ]
+    }
+  },
+  {
+    "id": "dp_007",
+    "topic": "dp",
+    "difficulty": "easy",
+    "title": {
+      "tr": "Merdiven Çıkma",
+      "en": "Climbing Stairs"
+    },
+    "prompt": {
+      "tr": "n basamaklı bir merdiveni, her adımda 1 ya da 2 basamak çıkarak tırmanmanın kaç farklı yolu olduğunu döndür.",
+      "en": "Return the number of distinct ways to climb a staircase of n steps, taking 1 or 2 steps at a time."
+    },
+    "starter_code": "def solve(n):\n    pass",
+    "test_cases": [
+      {
+        "input": "2",
+        "expected": "2",
+        "hidden": false,
+        "edge_case": false
+      },
+      {
+        "input": "3",
+        "expected": "3",
+        "hidden": false,
+        "edge_case": false
+      },
+      {
+        "input": "1",
+        "expected": "1",
+        "hidden": true,
+        "edge_case": true
+      }
+    ],
+    "reference_approach": {
+      "tags": [
+        "dp",
+        "fibonacci"
+      ],
+      "summary": {
+        "tr": "n. basamağa ulaşma yolları, n-1 ve n-2'ye ulaşma yollarının toplamı (Fibonacci deseni).",
+        "en": "Ways to reach step n is the sum of ways to reach n-1 and n-2 (Fibonacci pattern)."
+      }
+    },
+    "hints": {
+      "tr": [
+        "Bir basamağa 1 ya da 2 adımla gelebilirsin, bu neyi hatırlatıyor?",
+        "n. basamağa ulaşma yollarını, daha küçük basamaklara ulaşma yollarıyla ifade edebilir misin?",
+        "ways(n) = ways(n-1) + ways(n-2), taban durumları ways(1)=1, ways(2)=2."
+      ],
+      "en": [
+        "You can reach a step via a 1-step or 2-step move — does that remind you of something?",
+        "Can you express the ways to reach step n in terms of smaller steps?",
+        "ways(n) = ways(n-1) + ways(n-2), with base cases ways(1)=1, ways(2)=2."
+      ]
+    }
+  },
+  {
+    "id": "dp_018",
+    "topic": "dp",
+    "difficulty": "medium",
+    "title": {
+      "tr": "Bozuk Para Değişimi",
+      "en": "Coin Change"
+    },
+    "prompt": {
+      "tr": "Farklı para birimleri ve bir hedef tutar verildiğinde, tutarı oluşturmak için gereken minimum bozuk para sayısını döndür; mümkün değilse -1 döndür.",
+      "en": "Given coin denominations and a target amount, return the minimum number of coins needed to make that amount; return -1 if it's not possible."
+    },
+    "starter_code": "def solve(coins, amount):\n    pass",
+    "test_cases": [
+      {
+        "input": "[1, 2, 5], 11",
+        "expected": "3",
+        "hidden": false,
+        "edge_case": false
+      },
+      {
+        "input": "[2], 3",
+        "expected": "-1",
+        "hidden": false,
+        "edge_case": false
+      },
+      {
+        "input": "[1], 0",
+        "expected": "0",
+        "hidden": true,
+        "edge_case": true
+      }
+    ],
+    "reference_approach": {
+      "tags": [
+        "dp",
+        "unbounded_knapsack"
+      ],
+      "summary": {
+        "tr": "Her tutar için, her bozuk parayı deneyip en az parça sayısını bottom-up hesapla.",
+        "en": "For each amount, try every coin and compute the minimum count bottom-up."
+      }
+    },
+    "hints": {
+      "tr": [
+        "0 tutarını oluşturmak için kaç bozuk paraya ihtiyacın var?",
+        "Her tutar için, o tutara ulaşmanın en iyi yolunu daha küçük tutarların çözümleriyle kurabilir misin?",
+        "dp[a] = min(dp[a], dp[a-coin]+1) her coin için, dp[0]=0, imkansızsa sonsuz/işaret değer kullan."
+      ],
+      "en": [
+        "How many coins do you need to make amount 0?",
+        "For each amount, can you build the best way to reach it from solutions to smaller amounts?",
+        "dp[a] = min(dp[a], dp[a-coin]+1) for each coin, dp[0]=0, use infinity/sentinel for impossible amounts."
       ]
     }
   }

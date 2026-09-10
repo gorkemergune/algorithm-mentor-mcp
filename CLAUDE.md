@@ -94,8 +94,9 @@ sınıflandırması (bkz. "Kapsam" bölümü).
 > buradan devam noktasını anlar.
 
 **v1 TAMAMLANDI.** Çekirdek döngünün dokuz tool'u da kodlandı, testlendi ve
-`src/server.py` üzerinden MCP'ye bağlandı. `.venv/bin/python -m pytest` →
-**250 test, hepsi geçiyor.**
+`src/server.py` üzerinden MCP'ye bağlandı. Problem seti 22 probleme
+genişledi (11 konunun her birinde easy + medium).
+`.venv/bin/python -m pytest` → **532 test, hepsi geçiyor.**
 
 ### Katmanlar
 
@@ -117,6 +118,22 @@ sınıflandırması (bkz. "Kapsam" bölümü).
   tool bu bağlamı kullanır. Dokuz tool JSON input/output şemalarıyla
   kayıtlı. `LookupError`/`ValueError` MCP hata cevabına çevrilir; host'a
   stack trace gitmez.
+
+### Veri seti
+
+- `data/problems.json`: 22 problem, 11 konu × (easy, medium). Her problem
+  TR/EN başlık/metin, 3 kademeli TR/EN hint, `hidden` ve `edge_case`
+  etiketli test case'ler ve `reference_approach` (tags + TR/EN özet) taşır.
+- `tests/test_problems_data.py` bunu problem başına otomatik doğrular —
+  yeni problem eklendiğinde eksik alan, eksik dil, eksik gizli/edge case,
+  `solve` imzasıyla uyuşmayan argüman sayısı ya da harness sözleşmesine
+  uymayan JSON hemen testte patlar. Ayrıca her konunun easy+medium
+  problemi olduğu ve konu grafiğiyle örtüştüğü kontrol edilir.
+- `tests/test_progression.py` gerçek çözümlerle uçtan uca ilerlemeyi
+  koşar: `assess_level` → arrays/strings/trees'i gerçekten çözerek eşiğin
+  üstüne çıkarma → `get_next_topic`'in ön koşul grafiğine uyduğunu
+  doğrulama (kilitli konu en düşük skorlu olsa bile önerilmiyor) ve
+  sıkışma korumasının gerçek başarısız denemelerle tetiklenmesi.
 
 ### Mimari garantiler (testle sabitlenmiş)
 
@@ -149,12 +166,15 @@ Docker tabanlı sandbox.
 
 ### Sıradaki adım (v1 sonrası)
 
-1. **Problem seti**: hâlâ iki problem var (`arrays_012`, `hashmap_004`,
-   ikisi de easy). `get_next_topic` ve seviye ilerlemesi gerçekçi
-   çalışsın diye diğer konulara ve zorluklara problem eklenmeli — her biri
-   TR/EN metin, `edge_case` etiketli test case ve `reference_approach` ile.
-2. **Gerçek kullanım denemesi**: sunucuyu bir MCP host'una bağlayıp
+1. **Gerçek kullanım denemesi**: sunucuyu bir MCP host'una bağlayıp
    `docs/EXAMPLE_CHAT.md`'deki akışı uçtan uca yaşamak; profil çıktısının
-   mentor gibi okunup okunmadığını görmek.
-3. Bellek limiti macOS'ta uygulanmıyor (`RLIMIT_AS` reddediliyor) — Docker
+   mentor gibi okunup okunmadığını görmek. v1'de eksik kalan tek şey bu
+   saha denemesi.
+2. **hard zorluk**: veri setinde şimdilik easy + medium var; `get_problem`
+   `hard` kabul ediyor ama karşılığı olan problem yok. İlerleyen
+   öğrenciye verilecek hard problemler eklenmeli.
+3. **Problem seçimi**: `get_problem` eşleşenlerin ilkini döner; artık
+   konu başına birden çok problem olduğu için "daha önce çözülmüşü atla"
+   mantığı (`attempts` tablosundan okuyarak) anlamlı hale geldi.
+4. Bellek limiti macOS'ta uygulanmıyor (`RLIMIT_AS` reddediliyor) — Docker
    tabanlı runner (v2) bu farkı kapatır.
