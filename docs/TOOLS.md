@@ -364,15 +364,22 @@ host (Claude) `get_reference_approach` ile karşılaştırıp karar verir.
 **Dönen değer**:
 
 ```json
-{"logged": true, "problem_id": "graphs_003"}
+{"received": true, "problem_id": "graphs_003"}
 ```
 
-**Notlar**: Bu tool sadece anlatımı kaydeder, değerlendirme yapmaz. Akış:
-`explain_approach` → `get_reference_approach` → host karşılaştırıp
-`reference_match` boolean'ını belirler → `review_solution(attempt_type="explanation", reference_match=...)`
-skoru (0.5 ya da 0.2) hesaplar → `update_profile` bu skoru işler. Host
-hiçbir noktada doğrudan bir mastery sayısı belirlemez, sadece
-doğru/yanlış kararını verir.
+**Notlar (mimari karar)**: `explanation` metni **hiçbir yere kalıcı
+olarak yazılmaz** — ne `attempts` tablosuna ne başka bir tabloya. `attempts`
+zaten serbest metin tutmaz, yalnızca `review_solution`'ın ürettiği sabit
+`evidence` şablonlarını tutar (bkz. `review_solution`). Kullanıcının ham
+anlatımı yalnızca bu konuşma turu içinde, host'un (Claude'un)
+`get_reference_approach` ile karşılaştırma yapması için var — bu tool
+sadece anlatımı **alındı** olarak onaylar (`received: true`), veritabanına
+yazmaz. Akış: `explain_approach` → `get_reference_approach` → host
+karşılaştırıp `reference_match` boolean'ını belirler →
+`review_solution(attempt_type="explanation", reference_match=...)`
+skoru (0.5 ya da 0.2) ve sabit `evidence` metnini üretir → `update_profile`
+bu skoru ve sabit metni kalıcı hale getirir. Host hiçbir noktada doğrudan
+bir mastery sayısı belirlemez, sadece doğru/yanlış kararını verir.
 
 ---
 

@@ -19,16 +19,16 @@ sadece `locale`'e uygun veri döner.
 Tabii, önce seni kısaca değerlendirip nereden başlayacağını netleştirelim.
 
 ```
-[tool_call] assess_level()
+[tool_call] assess_level(preferred_language="tr")
 → {
     "estimated_level": "beginner",
-    "topic_estimates": {"arrays": 0.4, "hashmap": 0.2, "graphs": 0.0},
+    "topic_estimates": {"arrays": 0.0, "strings": 0.0, "hashmap": 0.0, "...": 0.0},
     "recommended_start_topic": "arrays"
   }
 ```
 
-Değerlendirmeye göre başlangıç seviyesindesin, en sağlam olduğun konu
-array'ler. Oradan başlayalım.
+Sende henüz bir geçmiş yok, o yüzden en temel konu olan array'lerden
+başlayalım — birkaç soru çözdükçe seviyen netleşecek.
 
 ```
 [tool_call] get_problem(topic="arrays", difficulty="easy", locale="tr")
@@ -54,12 +54,11 @@ array'ler. Oradan başlayalım.
 
 [tool_call] review_solution(problem_id="arrays_012", attempt_type="code",
                              test_results={...}, hints_used=0)
-→ {"score": 1.0, "evidence": ["Correct algorithm", "Clean edge case handling"],
-    "mistake_type": "none", "feedback": "Temiz çözüm, hiç hint kullanmadın.",
-    "suggested_topic_reinforcement": null}
+→ {"score": 1.0, "evidence": ["Correct algorithm, no hints needed"],
+    "mistake_type": "none", "suggested_topic_reinforcement": null}
 
 [tool_call] update_profile(topic="arrays", problem_id="arrays_012",
-                            score=1.0, evidence=["Correct algorithm", "Clean edge case handling"],
+                            score=1.0, evidence=["Correct algorithm, no hints needed"],
                             mistake_type=null)
 → {"topic_scores": {"arrays": 0.72, ...}, "level": "beginner"}
 ```
@@ -121,13 +120,12 @@ starting point.
 
 [tool_call] review_solution(problem_id="graphs_003", attempt_type="code",
                              test_results={...}, hints_used=1)
-→ {"score": 0.8, "evidence": ["Correct traversal", "Needed one hint on visited-state"],
-    "mistake_type": "wrong_approach", "feedback": "Good, but you needed a nudge on tracking visited nodes.",
-    "suggested_topic_reinforcement": "graphs"}
+→ {"score": 0.8, "evidence": ["Correct algorithm, needed one hint"],
+    "mistake_type": "none", "suggested_topic_reinforcement": "graphs"}
 
 [tool_call] update_profile(topic="graphs", problem_id="graphs_003",
-                            score=0.8, evidence=["Correct traversal", "Needed one hint on visited-state"],
-                            mistake_type="wrong_approach")
+                            score=0.8, evidence=["Correct algorithm, needed one hint"],
+                            mistake_type="none")
 → {"topic_scores": {"graphs": 0.31, ...}}
 
 [tool_call] get_next_topic()
@@ -152,7 +150,7 @@ Elbette, mantığını anlat yeter — bu da değerlendirmeye sayılır.
 
 ```
 [tool_call] explain_approach(problem_id="arrays_012", explanation="...")
-→ {"logged": true, "problem_id": "arrays_012"}
+→ {"received": true, "problem_id": "arrays_012"}
 
 [tool_call] get_reference_approach(problem_id="arrays_012")
 → {"approach_tags": ["hashmap", "single_pass"],
@@ -166,8 +164,7 @@ bu yüzden sadece bir boolean karar veriyor (sayısal puanı kendisi seçmiyor):
 [tool_call] review_solution(problem_id="arrays_012", attempt_type="explanation",
                              reference_match=true)
 → {"score": 0.5, "evidence": ["Correct approach described verbally, no code written"],
-    "mistake_type": "none", "feedback": "Yaklaşımın tam doğru.",
-    "suggested_topic_reinforcement": null}
+    "mistake_type": "none", "suggested_topic_reinforcement": "arrays"}
 
 [tool_call] update_profile(topic="arrays", problem_id="arrays_012",
                             score=0.5, evidence=["Correct approach described verbally, no code written"],
