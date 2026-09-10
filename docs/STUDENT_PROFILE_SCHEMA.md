@@ -159,6 +159,19 @@ CREATE TABLE attempts (
 );
 ```
 
+**Veritabanı konumu**: `profile.db`, **repo kökünde** tutulur ve yolu
+kaynak dosyaya göre hesaplanır (`src/storage/sqlite.py` →
+`DEFAULT_DB_PATH = Path(__file__).resolve().parents[2] / "profile.db"`).
+Yani yol **çalışma dizininden (cwd) bağımsızdır**: sunucu hangi dizinden
+başlatılırsa başlatılsın — bazı MCP host'ları (örn. Claude Desktop)
+config'teki `cwd` alanını uygulamaz, süreci kendi dizininde başlatır —
+hep aynı dosya açılır, öğrenci geçmişi başka bir dizine düşüp kaybolmaz.
+Göreli bir yol (`Path("profile.db")`) kullanılsaydı her host için farklı
+bir veritabanı oluşurdu; bu yüzden bilinçli olarak mutlak yol kullanılır.
+Test ve özel kurulumlar yolu `connect(db_path=...)` ile geçebilir
+(testler `":memory:"` kullanır). Aynı hesap `data/problems.json` ve
+`data/topics.json` için de geçerlidir.
+
 `attempts` tablosu `StudentProfile.history`'nin kalıcı hali — asla
 budanmaz (v2'deki evaluation protocol için tam geçmiş gerekecek). Sadece
 `recent_evidence` konu başına 3 satırla sınırlı tutulur.

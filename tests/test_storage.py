@@ -1,4 +1,7 @@
 import json
+import subprocess
+import sys
+from pathlib import Path
 
 import pytest
 
@@ -201,3 +204,38 @@ class TestAttempts:
             )
         assert len(db.get_attempts(conn, topic="arrays")) == 2
         assert len(db.get_attempts(conn, limit=1)) == 1
+
+
+class TestDefaultDatabaseLocation:
+    """`profile.db` yolu cwd'ye değil kaynak dosyaya bağlı olmalı.
+
+    Bazı MCP host'ları config'teki `cwd` alanını uygulamaz; göreli bir yol
+    kullanılsaydı her başlatmada başka bir dizinde veritabanı oluşur,
+    öğrenci geçmişi kaybolurdu (bkz. STUDENT_PROFILE_SCHEMA.md → Depolama).
+    """
+
+    def test_default_path_is_absolute(self):
+        assert db.DEFAULT_DB_PATH.is_absolute()
+
+    def test_default_path_sits_in_the_repo_root(self):
+        repo_root = Path(db.__file__).resolve().parents[2]
+
+        assert db.DEFAULT_DB_PATH == repo_root / "profile.db"
+        assert (repo_root / "pyproject.toml").exists()
+        assert (repo_root / "data" / "problems.json").exists()
+
+    def test_path_does_not_change_with_the_working_directory(self, tmp_path):
+        repo_root = Path(db.__file__).resolve().parents[2]
+        probe = "from src.storage import sqlite; print(sqlite.DEFAULT_DB_PATH)"
+
+        result = subprocess.run(
+            [sys.executable, "-c", probe],
+            cwd=tmp_path,
+            env={"PYTHONPATH": str(repo_root), "PATH": "/usr/bin:/bin"},
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+        assert result.stdout.strip() == str(db.DEFAULT_DB_PATH)
+        assert not (tmp_path / "profile.db").exists()

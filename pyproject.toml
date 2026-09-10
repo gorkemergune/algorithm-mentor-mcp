@@ -12,9 +12,6 @@ dependencies = ["mcp>=2.0", "anyio>=4.0"]
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
 
-[project.scripts]
-algorithm-mentor = "src.server:main"
-
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["src*"]

@@ -66,11 +66,13 @@ sınıflandırması (bkz. "Kapsam" bölümü).
   TOOLS.md
   STUDENT_PROFILE_SCHEMA.md
   EXAMPLE_CHAT.md
-/tests
-  test_mastery.py
-  test_next_topic.py
-  test_execution.py
-  test_tools.py
+/tests             - tool başına test + veri şeması + uçtan uca akış
+  test_mastery.py, test_get_problem.py, test_problem_loader.py,
+  test_execution.py, test_submit_solution.py, test_review_solution.py,
+  test_storage.py, test_assess_level.py, test_update_profile.py,
+  test_get_next_topic.py, test_hint.py, test_explanation_flow.py,
+  test_server.py, test_problems_data.py, test_progression.py
+/img               - README'deki kullanım kılavuzu ekran görüntüleri
 ```
 
 ## Kurallar
@@ -96,7 +98,7 @@ sınıflandırması (bkz. "Kapsam" bölümü).
 **v1 TAMAMLANDI.** Çekirdek döngünün dokuz tool'u da kodlandı, testlendi ve
 `src/server.py` üzerinden MCP'ye bağlandı. Problem seti 22 probleme
 genişledi (11 konunun her birinde easy + medium).
-`.venv/bin/python -m pytest` → **532 test, hepsi geçiyor.**
+`.venv/bin/python -m pytest` → **535 test, hepsi geçiyor.**
 
 ### Katmanlar
 
@@ -153,9 +155,25 @@ genişledi (11 konunun her birinde easy + medium).
 MCP SDK sistem Python'ına kurulamıyor (homebrew, PEP 668). Repo kökünde
 `.venv` var; testler ve sunucu **venv içinden** çalıştırılmalı
 (`.venv/bin/python -m pytest`). `pyproject.toml` `mcp>=2.0` + `anyio`
-gerektirir ve `algorithm-mentor` konsol girişini tanımlar. README'deki
-kurulum/`mcp_config.json` örneği gerçek sunucuyla doğrulandı (alt process
-olarak başlatılıp dokuz tool listelendi).
+gerektirir.
+
+Sunucu **repo kökünden** çalıştırılmak üzere tasarlandı, kurulu bir paket
+olarak değil: `data/*.json` ve `profile.db` yolları `Path(__file__)...
+parents[2]` ile çözülüyor ve `data/` pakete dahil edilmiyor. Bu yüzden
+`[project.scripts]` konsol girişi (`algorithm-mentor`) **kaldırıldı** —
+editable kurulumda repo dışından çağrıldığında `ModuleNotFoundError: No
+module named 'src'` veriyordu (bu ortamda setuptools'un editable finder
+`.pth`'i açılışta devreye girmiyor; `src` yalnızca cwd üzerinden
+çözülüyor). Desteklenen bağlanma biçimi: venv python + `-m src.server`
++ **`env.PYTHONPATH` olarak repo kökü** (+ uygulayan host'lar için `cwd`).
+Claude Desktop config'teki `cwd`'yi uygulamıyor, süreci kendi dizininde
+başlatıyor; `PYTHONPATH` olmadan `src` bulunamıyor. Yabancı bir dizinden
+`PYTHONPATH` ile başlatılıp doğrulandı.
+
+`profile.db` ve `data/*.json` yolları `__file__` tabanlı (repo kökü), yani
+cwd'den bağımsız — sunucu nerede başlatılırsa başlatılsın aynı profil
+açılır. `tests/test_storage.py` bunu regresyona karşı sabitliyor
+(mutlak yol + yabancı cwd'de alt process kontrolü).
 
 ### v1 dışı bırakılanlar (v2)
 
@@ -164,17 +182,26 @@ Cross-language practice, idiom check, gelişmiş hata sınıflandırması
 `sync_external_progress`), soru sorarak gerçek ölçüm yapan `assess_level`,
 Docker tabanlı sandbox.
 
+### Kullanıma hazır durum
+
+- Repo konumu **`~/algorithm-mentor-mcp`** (Desktop'tan taşındı). Config'teki
+  mutlak yollar buna göre verilmeli.
+- Claude Desktop'ta gerçek oturum yapıldı ve çalıştığı doğrulandı: konu
+  seçimi → problem → başarısız deneme → ipucu → geçen çözüm (0.8) akışı
+  ekran görüntüleriyle `img/` altında, README'de kullanım kılavuzu olarak
+  anlatılıyor.
+- README artık kurulum + bağlama + ilk oturum + tool tablosu + puanlama +
+  sorun giderme bölümlerinden oluşan bir kullanım kılavuzu. Sorun giderme
+  bölümü `PYTHONPATH` eksikliğinde çıkan "Server disconnected" hatasını
+  ekran görüntüsüyle birlikte açıklıyor.
+
 ### Sıradaki adım (v1 sonrası)
 
-1. **Gerçek kullanım denemesi**: sunucuyu bir MCP host'una bağlayıp
-   `docs/EXAMPLE_CHAT.md`'deki akışı uçtan uca yaşamak; profil çıktısının
-   mentor gibi okunup okunmadığını görmek. v1'de eksik kalan tek şey bu
-   saha denemesi.
-2. **hard zorluk**: veri setinde şimdilik easy + medium var; `get_problem`
+1. **hard zorluk**: veri setinde şimdilik easy + medium var; `get_problem`
    `hard` kabul ediyor ama karşılığı olan problem yok. İlerleyen
    öğrenciye verilecek hard problemler eklenmeli.
-3. **Problem seçimi**: `get_problem` eşleşenlerin ilkini döner; artık
+2. **Problem seçimi**: `get_problem` eşleşenlerin ilkini döner; artık
    konu başına birden çok problem olduğu için "daha önce çözülmüşü atla"
    mantığı (`attempts` tablosundan okuyarak) anlamlı hale geldi.
-4. Bellek limiti macOS'ta uygulanmıyor (`RLIMIT_AS` reddediliyor) — Docker
+3. Bellek limiti macOS'ta uygulanmıyor (`RLIMIT_AS` reddediliyor) — Docker
    tabanlı runner (v2) bu farkı kapatır.
