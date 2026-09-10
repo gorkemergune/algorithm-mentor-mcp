@@ -390,16 +390,27 @@ bir mastery sayısı belirlemez, sadece doğru/yanlış kararını verir.
 `explain_approach` çağrıldıktan sonra kullanılır (önceden gösterilirse
 spoiler olur).
 
-**Parametreler**: `problem_id: str`
+**Parametreler**:
+
+- `problem_id: str`
+- `locale: str` ("tr" | "en" — `approach_summary`'nin dili; boşsa profildeki
+  `preferred_language`, o da yoksa EN. `get_problem`/`hint` ile aynı çözümleme)
 
 **Dönen değer**:
 
 ```json
-{"approach_tags": ["hashmap", "single_pass"], "approach_summary": "Tek geçişte hashmap'te tamamlayıcıyı ara."}
+{
+  "approach_tags": ["hashmap", "single_pass"],
+  "approach_summary": "Tek geçişte hashmap'te tamamlayıcıyı ara.",
+  "locale": "tr"
+}
 ```
 
 **Notlar**: `data/problems.json`'da her probleme `reference_approach` alanı
-eklenmesi gerekir (TR/EN, bkz. i18n kuralı).
+eklenmesi gerekir. `tags` dilden bağımsız kod-etiketlerdir (host'un
+karşılaştırma yaptığı asıl sinyal); `summary` ise TR/EN tutulur ve
+`locale`'e uyanı düz string olarak döner (i18n kuralı). Referans yaklaşımı
+olmayan bir problem için tool hata fırlatır — sessizce boş özet dönmez.
 
 ---
 

@@ -93,145 +93,68 @@ sınıflandırması (bkz. "Kapsam" bölümü).
 > Bu bölümü her oturum sonunda güncelle. Bir sonraki Claude Code oturumu
 > buradan devam noktasını anlar.
 
-### Biten (test edilmiş, spesifikasyona uyuyor)
+**v1 TAMAMLANDI.** Çekirdek döngünün dokuz tool'u da kodlandı, testlendi ve
+`src/server.py` üzerinden MCP'ye bağlandı. `.venv/bin/python -m pytest` →
+**250 test, hepsi geçiyor.**
 
-- `src/domain/mastery.py` — sabit skor tablosu (`attempt_score`), skor
-  doğrulama (`is_valid_score`), EMA (`update_topic_score`, tablo dışı skoru
-  reddeder), seviye eşikleri (`level_for_scores`).
-- `src/domain/problem.py` — `Problem`/`ProblemTestCase` modelleri,
-  `data/problems.json` yükleyicisi, locale çözümleme, gizli test case
-  filtresi. **Yükleme anında i18n doğrulaması**: `title`/`prompt`/`hints`
-  alanlarında TR veya EN eksikse `ProblemDataError` — mesaj hangi
-  `problem_id`'nin hangi alanında hangi dilin eksik olduğunu söyler.
-- `src/tools/get_problem.py` — TOOLS.md'deki dönen değerle birebir; hint,
-  referans yaklaşım ve gizli test case çıktıya sızmıyor.
-- `src/execution/engine.py` — `ExecutionEngine` soyut arayüzü
-  (`execute(code, language, stdin, timeout)`), `ExecutionResult`
-  (stdout/stderr/exit_code/runtime_ms/timed_out/error) ve
-  `UnsupportedLanguageError`.
-- `src/execution/python_runner.py` — `PythonRunner`: geçici dizinde izole
-  yorumlayıcı (`python -I -B`), kendi process grubu, wall-clock timeout
-  (varsayılan 5 sn) ve zaman aşımında `killpg` ile torunlar dahil temizlik,
-  RLIMIT_CPU/FSIZE/AS limitleri, çıktı kısaltma (64 KB). `describe_error`
-  syntax/exception/timeout durumunu tek satırlık `error` metnine çevirir.
-- `src/tools/submit_solution.py` — TOOLS.md → "Harness sözleşmesi"nin
-  uygulaması: test case'ler tek sandbox process'ine stdin'den JSON olarak
-  verilir, `solve(*args)` çağrılır, sonuç `json.loads(expected)` ile tam
-  eşitlik (`==`) üzerinden karşılaştırılır. Sonuç satırları
-  `__MENTOR_RESULT__` ile işaretlenir, kullanıcının debug print'leri
-  ayrıştırmayı bozamaz; timeout'ta o ana kadar biten case'ler korunur,
-  kalanlar başarısız sayılır. Dönen değer sadece `case`/`passed` taşır.
-- `src/domain/review.py` — `EVIDENCE_TEMPLATES` (7 sabit, dilden bağımsız
-  şablon), `mistake_type` sınıflandırması (`classify_code_mistake`,
-  `classify_explanation_mistake`) ve `suggested_reinforcement`. Skor burada
-  hesaplanmaz; o hâlâ yalnızca `mastery.py`'de.
-- `src/tools/review_solution.py` — skoru `mastery.attempt_score`'tan alır,
-  host'tan ham sayı kabul etmez. `mistake_type`, başarısız case'lerin
-  `edge_case` etiketinden türer (`error` metni sınıflandırmayı etkilemez).
-  `attempt_type="code"` ile boş `test_results` gelirse `ValueError` —
-  sessizce 0.2 üretmez. Dönen değer `feedback` alanı taşımaz.
-- `src/domain/problem.py` → `ProblemTestCase.edge_case` alanı eklendi,
-  `data/problems.json`'daki yeni etiket okunuyor.
-- `src/domain/topics.py` — `data/topics.json` yükleyicisi, prerequisite
-  doğrulaması (bilinmeyen ön koşul → `TopicDataError`), `root_topics`.
-- `src/storage/sqlite.py` — şemadaki dört tablo (`profile` tek satır,
-  `topic_scores`, `recent_evidence`, `attempts`), `connect`/`init_db`
-  (idempotent) ve CRUD. `recent_evidence` konu başına 3 satıra budanır
-  (`timestamp DESC, rowid DESC`), `attempts` asla budanmaz. İş kuralı
-  içermez, sadece veri okur/yazar.
-- `src/tools/assess_level.py` — `topics.json`'daki her konuyu `0.0` ile
-  seed'ler, seviyeyi `beginner` yapar, `preferred_language`'i profile yazar.
-  `recommended_start_topic` = prerequisite'siz konular arasından en düşük
-  skorlu. `retake=True` skorları yeniden seed'ler ve `recent_evidence`'ı
-  temizler, `attempts`'e dokunmaz. Profil varsa ve `retake=False` ise
-  idempotent.
-- `src/tools/update_profile.py` — skoru `mastery.is_valid_score` ile
-  doğrular (`math.isclose`, `abs_tol=1e-9`), EMA'yı
-  `mastery.update_topic_score`'a yaptırır, denemeyi `attempts`'e yazar,
-  evidence'ı `recent_evidence`'a ekleyip budar, `level`'i yeniden hesaplar.
-  Profil ya da konu satırı yoksa `LookupError` ("önce assess_level").
-  Doğrulama başarısızsa hiçbir şey yazılmaz.
-- `src/tools/get_next_topic.py` — üç kural: ön koşul eşiği (0.6, konu
-  aday olmak için tüm ön koşulları bu skorun üstünde olmalı), adaylar
-  arasından en düşük skor (eşitlikte `topics.json` sırası) ve sıkışma
-  koruması (konunun **kendi** son 3 denemesi de `score <= 0.2` ise en
-  düşük skorlu ön koşula dönülür). Profili yalnızca okur, `current_focus`
-  yazmaz. `reason` sabit TR/EN şablondan, `reason_code` makine okunur
-  (`lowest_score` / `stuck_fallback` / `stuck_no_prerequisite`).
-- `src/domain/topics.py` → `PREREQUISITE_THRESHOLD`, `candidate_topics`,
-  `lowest_scoring` seçim yardımcıları.
-- `src/tools/hint.py` — `data/problems.json`'daki TR/EN hint listesinden
-  `attempt_number`'a karşılık geleni döner; liste sonunu aşan deneme
-  numarası en son (en açık) hint'i tekrar verir, hata vermez.
-  `attempt_number < 1` reddedilir. `locale` boşsa sırasıyla
-  `preferred_language` argümanı → profildeki `preferred_language` →
-  İngilizce. Profile yazmaz, sadece okur.
-- `src/domain/problem.py` → `Problem.localized_hints(locale)`.
-- `docs/TOOLS.md` → `submit_solution` altına **"Harness sözleşmesi"**
-  başlığı eklendi (spesifikasyon kodu önceler kuralı).
-- `.gitignore`: `__pycache__/`, `*.pyc`, `.venv/`, `*.db`. Daha önce
-  yanlışlıkla takip edilen 8 `.pyc` dosyası index'ten çıkarıldı.
-- Testler: mastery, get_problem, problem_loader, execution,
-  submit_solution, review_solution, storage, assess_level, update_profile,
-  get_next_topic, hint — **216 test, hepsi geçiyor**
-  (`python3 -m pytest -q` → `216 passed`).
+### Katmanlar
 
-### Yarım / eksik
+- `src/domain/` — `mastery.py` (sabit skor tablosu, EMA, seviye eşikleri;
+  skorlama formülünün TEK yeri), `problem.py` (model + yükleyici + yükleme
+  anında TR/EN doğrulaması), `topics.py` (bağımlılık grafiği, aday seçimi,
+  `PREREQUISITE_THRESHOLD = 0.6`), `review.py` (sabit evidence şablonları,
+  `mistake_type` sınıflandırması).
+- `src/execution/` — `engine.py` (`ExecutionEngine` arayüzü,
+  `execute(code, language, stdin, timeout)`) ve `python_runner.py` (izole
+  yorumlayıcı, process grubu, wall-clock timeout, CPU/FSIZE/AS limitleri).
+- `src/storage/sqlite.py` — şemadaki dört tablo, tek satırlık `profile`,
+  `recent_evidence` konu başına 3 satır, `attempts` asla budanmaz.
+- `src/tools/` — dokuz tool: `assess_level`, `get_problem`,
+  `submit_solution`, `hint`, `explain_approach`, `get_reference_approach`,
+  `review_solution`, `update_profile`, `get_next_topic`.
+- `src/server.py` — MCP SDK v2, stdio transport. Açılışta **tek** SQLite
+  bağlantısı + problem/konu verisi bir kez yüklenir (`MentorContext`), her
+  tool bu bağlamı kullanır. Dokuz tool JSON input/output şemalarıyla
+  kayıtlı. `LookupError`/`ValueError` MCP hata cevabına çevrilir; host'a
+  stack trace gitmez.
 
-- Hiç başlanmamış: `src/server.py` (MCP giriş noktası, tool kaydı).
-- Kodlanmamış tool'lar: `explain_approach`, `get_reference_approach`.
-- `StudentProfile` / `Attempt` için ayrı dataclass yazılmadı — profil
-  durumu SQLite tablolarında yaşıyor, tool'lar sözlük döndürüyor. Şema
-  dosyasındaki sınıflar bugün tabloların karşılığı; ihtiyaç doğarsa
-  (örn. `get_next_topic`) domain modeli sonradan eklenebilir.
+### Mimari garantiler (testle sabitlenmiş)
 
-### Bilinen sınırlar / notlar
+- Skoru yalnızca `review_solution` üretir, `mastery.py`'deki sabit
+  tablodan; `update_profile` tablo dışı bir sayıyı reddeder ve reddettiğinde
+  veritabanına hiçbir şey yazmaz.
+- Gizli test case'ler, hint'ler ve referans yaklaşım `get_problem`
+  çıktısına sızmaz; `submit_solution` yalnızca sıra numarası + geçti/kaldı
+  döner.
+- Sözlü anlatım metni hiçbir tabloya yazılmaz (testte `iterdump` ile
+  doğrulanıyor); kalıcılaşan tek şey sabit evidence şablonları.
+- Kullanıcıya giden her metin TR/EN: problem/hint/referans özeti veriden,
+  `get_next_topic` gerekçesi sabit şablondan.
 
-- **Bellek limiti macOS'ta uygulanmıyor**: `RLIMIT_AS` burada setrlimit
-  hatası veriyor, `PythonRunner` bunu yutup devam ediyor — macOS'ta koruma
-  CPU + wall-clock limitleridir, Linux'ta üçü de geçerli. Docker'a geçince
-  (v2) bu fark kapanır.
-- Sandbox v1'de ağ/dosya sistemi erişimini ayrıca kısıtlamıyor; izolasyon
-  ayrı process + geçici dizin + kaynak limitleri seviyesinde.
-- Harness stdin'i test case'ler için kullanır; kullanıcı kodu `input()`
-  çağırırsa case verisini tüketir (v1'de kabul edilen sınır, sözleşme
-  gereği kullanıcı sadece `solve`'u doldurur).
-- `recent_errors` → **`recent_evidence`** olarak yeniden adlandırıldı
-  (alan hem başarı hem başarısızlık kanıtı tutuyor). Şema, tablo adı, tool
-  alanları ve testler güncellendi; `init_db` eski `recent_errors` tablosunu
-  düşürüyor (production verisi yok, taşıma yapılmadı).
-- `hint`, hint sayısını kendisi saymaz ve profile yazmaz — `hints_used`
-  host tarafından `review_solution`/`update_profile`'a geçirilir.
-- `get_next_topic` için karara bağlananlar (TOOLS.md güncellendi): ön koşul
-  eşiği 0.6 sabit; sıkışma konunun kendi son 3 denemesine bakar (araya
-  başka konu girebilir); geri dönüş en düşük skorlu doğrudan ön koşula,
-  ön koşul yoksa konu sabit kalır ve `stuck_no_prerequisite` bildirilir;
-  `reason` TR/EN sabit şablondan üretilir, yanında `reason_code` döner.
-- Storage oturumunda karara bağlanan noktalar (TOOLS.md güncellendi):
-  `assess_level` v1'de quiz yapmaz, sıfır seed'ler ve host'tan sayısal
-  tahmin almaz; `preferred_language` artık `assess_level` parametresi;
-  `retake` skorları sıfırlar ama geçmişi korur; `update_profile` dönüşü
-  `level` de taşır. Ek olarak `update_profile`'a `hints_used` parametresi
-  eklendi — `attempts` tablosu bu kolonu zorunlu tutuyor, skoru etkilemez.
-- `recent_evidence`, adına rağmen yalnızca hataları değil `evidence`'ın
-  tamamını tutar (başarı şablonları dahil) — TOOLS.md'nin harfi böyle.
-- `review_solution` için TOOLS.md'de tanımsız kalan iki nokta karara
-  bağlandı ve doküman güncellendi: `suggested_topic_reinforcement` skor
-  1.0'ın altındaysa konuyu döner (1.0'da `null`), ve tool `feedback` alanı
-  döndürmez (doğal dil yorumu host'un). Ayrıca `explanation` denemelerinde
-  `mistake_type`, `reference_match`'ten türer (`true` → none, `false` →
-  wrong_approach).
-- `get_problem` eşleşenler arasından ilkini seçer; "daha önce çözülmüşü
-  atla" mantığı `src/storage` gelince eklenecek.
-- Problem seti hâlâ ince: sadece `arrays`/`hashmap`, sadece `easy`.
+### Ortam notu
 
-### Sıradaki adım
+MCP SDK sistem Python'ına kurulamıyor (homebrew, PEP 668). Repo kökünde
+`.venv` var; testler ve sunucu **venv içinden** çalıştırılmalı
+(`.venv/bin/python -m pytest`). `pyproject.toml` `mcp>=2.0` + `anyio`
+gerektirir ve `algorithm-mentor` konsol girişini tanımlar. README'deki
+kurulum/`mcp_config.json` örneği gerçek sunucuyla doğrulandı (alt process
+olarak başlatılıp dokuz tool listelendi).
 
-1. `explain_approach` + `get_reference_approach` — sözlü anlatım akışı:
-   anlatımı kaydet, referans etiketlerini (`reference_approach`) döndür,
-   host karşılaştırıp `reference_match` boolean'ını üretsin. Anlatımın
-   nereye kaydedileceği (yeni tablo mu, `attempts` mi) kararlaştırılmalı.
-2. `src/server.py` — MCP giriş noktası, dokuz tool'un stdio üzerinden
-   kaydı; `profile.db` yolu ve tek bağlantı yönetimi burada toplanır.
-3. Problem seti hâlâ ince — `get_next_topic` gerçekçi çalışsın diye
-   arrays/hashmap dışındaki konulara problem eklenmeli.
+### v1 dışı bırakılanlar (v2)
+
+Cross-language practice, idiom check, gelişmiş hata sınıflandırması
+(`inefficient` tespiti), dış platform entegrasyonu (`link_external_account`,
+`sync_external_progress`), soru sorarak gerçek ölçüm yapan `assess_level`,
+Docker tabanlı sandbox.
+
+### Sıradaki adım (v1 sonrası)
+
+1. **Problem seti**: hâlâ iki problem var (`arrays_012`, `hashmap_004`,
+   ikisi de easy). `get_next_topic` ve seviye ilerlemesi gerçekçi
+   çalışsın diye diğer konulara ve zorluklara problem eklenmeli — her biri
+   TR/EN metin, `edge_case` etiketli test case ve `reference_approach` ile.
+2. **Gerçek kullanım denemesi**: sunucuyu bir MCP host'una bağlayıp
+   `docs/EXAMPLE_CHAT.md`'deki akışı uçtan uca yaşamak; profil çıktısının
+   mentor gibi okunup okunmadığını görmek.
+3. Bellek limiti macOS'ta uygulanmıyor (`RLIMIT_AS` reddediliyor) — Docker
+   tabanlı runner (v2) bu farkı kapatır.
